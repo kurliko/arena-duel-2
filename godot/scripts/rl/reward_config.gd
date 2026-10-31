@@ -29,6 +29,10 @@ extends Resource
 @export var hp_low_fraction: float = 0.5
 ## Za każdy zryw (unik nie jest darmowy).
 @export var dash: float = -0.02
+## Dodatkowo za zryw bez groźnego pocisku (zagrożenie z Behaviors.max_projectile_threat poniżej progu):
+## żaden pocisk nie leci albo leci daleko lub obok.
+@export var unnecessary_dash: float = -0.1
+@export var dash_threat_threshold: float = 0.15
 
 @export_group("Shaping")
 ## Za każdą decyzję (żeby bot nie czekał w rogu).

@@ -17,6 +17,10 @@ const HP_BAR_BG: Color = Color(0.0, 0.0, 0.0, 0.6)
 const HP_BAR_FG: Color = Color(0.3, 0.9, 0.4)
 const HP_BAR_LOW: Color = Color(0.95, 0.3, 0.25)
 const HP_BAR_SIZE: Vector2 = Vector2(36.0, 4.0)
+## Smuga zrywu: zapamiętane pozycje, gdy prędkość przekracza ten ułamek prędkości granicznej (tylko grafika).
+const DASH_TRAIL_SPEED_FACTOR: float = 1.25
+const DASH_TRAIL_LENGTH: int = 8
+const DASH_TRAIL_ALPHA: float = 0.55
 
 var config: GameConfig
 var color: Color = Color.WHITE
@@ -37,6 +41,7 @@ var aim_angle: float:
 
 var _pending_reset: bool = false
 var _reset_transform: Transform2D
+var _dash_trail: Array[Vector2] = []
 
 
 func setup(cfg: GameConfig, fighter_color: Color, fighter_label: String) -> void:
@@ -84,6 +89,7 @@ func reset_at(spawn_position: Vector2, facing_angle: float) -> void:
 	current_action = Action.idle()
 	stats = FighterStats.new()
 	active = true
+	_dash_trail.clear()
 	queue_redraw()
 
 
@@ -135,7 +141,18 @@ func _physics_process(delta: float) -> void:
 	_apply_turn()
 	_apply_movement()
 	_apply_shoot()
+	_update_dash_trail()
 	queue_redraw()
+
+
+## Smuga po zrywie: przy prędkości wyraźnie większej od granicznej zapamiętujemy pozycje, potem smuga zanika.
+func _update_dash_trail() -> void:
+	if linear_velocity.length() > config.max_speed() * DASH_TRAIL_SPEED_FACTOR:
+		_dash_trail.push_front(global_position)
+		if _dash_trail.size() > DASH_TRAIL_LENGTH:
+			_dash_trail.pop_back()
+	elif not _dash_trail.is_empty():
+		_dash_trail.pop_back()
 
 
 ## Moment siły dla obrotu (siły i momenty przyłożone w tym ticku działają przez jeden krok fizyki).
@@ -182,6 +199,10 @@ func _draw() -> void:
 	if config == null:
 		return
 	var r: float = config.fighter_radius
+	# Smuga zrywu: półprzezroczyste „duchy” w poprzednich pozycjach, coraz mniejsze i bledsze.
+	for i: int in range(1, _dash_trail.size()):
+		var fade: float = 1.0 - float(i) / DASH_TRAIL_LENGTH
+		draw_circle(to_local(_dash_trail[i]), r * (0.6 + 0.4 * fade), Color(color, DASH_TRAIL_ALPHA * fade))
 	# Rysowanie w układzie ciała (obraca się razem z celowaniem): korpus i lufa.
 	draw_rect(Rect2(Vector2(r - 4.0, -BARREL_SIZE.y / 2.0), BARREL_SIZE), BARREL_COLOR)
 	draw_circle(Vector2.ZERO, r + 2.0, OUTLINE_COLOR)

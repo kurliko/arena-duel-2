@@ -245,21 +245,27 @@ func dodge_if_threatened(obs: Observation, action: Action) -> bool:
 
 ## Zagrożenie pociskiem w skali 0..1: im szybciej i bliżej środka bota przeleci pocisk, tym wyżej.
 func projectile_threat(obs: Observation) -> float:
+	return max_projectile_threat(obs, _config)
+
+
+## Wersja statyczna (używa jej też nagroda bota RL, żeby ocenić, czy unik był potrzebny).
+static func max_projectile_threat(obs: Observation, config: GameConfig) -> float:
 	var best: float = 0.0
 	for p: Dictionary in obs.nearest_projectiles:
-		best = maxf(best, _threat_of(p))
+		best = maxf(best, threat_of(p, config))
 	return best
 
 
-func _threat_of(p: Dictionary) -> float:
-	var rel: Vector2 = p["pos"] * _config.observation_distance_scale
-	var vel: Vector2 = p["vel"] * _config.projectile_speed
+## Zagrożenie jednym pociskiem: czas do największego zbliżenia t = -r·v/|v|^2 i odległość minięcia |r + v t|.
+static func threat_of(p: Dictionary, config: GameConfig) -> float:
+	var rel: Vector2 = p["pos"] * config.observation_distance_scale
+	var vel: Vector2 = p["vel"] * config.projectile_speed
 	if rel.dot(vel) >= 0.0 or vel.is_zero_approx():
 		return 0.0
 	var t: float = -rel.dot(vel) / vel.length_squared()
 	var miss_distance: float = (rel + vel * t).length()
 	var time_factor: float = clampf(1.0 - t / THREAT_HORIZON, 0.0, 1.0)
-	var miss_factor: float = clampf(1.0 - miss_distance / (_config.fighter_radius * THREAT_RADIUS_FACTOR), 0.0, 1.0)
+	var miss_factor: float = clampf(1.0 - miss_distance / (config.fighter_radius * THREAT_RADIUS_FACTOR), 0.0, 1.0)
 	return time_factor * miss_factor
 
 
@@ -267,7 +273,7 @@ func _most_threatening_projectile_velocity(obs: Observation) -> Vector2:
 	var best: float = 0.0
 	var velocity: Vector2 = Vector2.ZERO
 	for p: Dictionary in obs.nearest_projectiles:
-		var threat: float = _threat_of(p)
+		var threat: float = threat_of(p, _config)
 		if threat > best:
 			best = threat
 			velocity = p["vel"]

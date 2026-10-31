@@ -95,6 +95,12 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   z momentem bezwładności (rozpędzenie i wyhamowanie broni na celu przy decyzji co 4 ticki) przy krótkim etapie
   nauki z łatwym przeciwnikiem.
 
+- **Unik bota RL wyglądał jak teleportacja:** impuls zrywu (Δv = 480 px/s) dodaje się do bieżącej prędkości, więc
+  przez ok. 0,25 s bot porusza się z prędkością do ok. 700 px/s, a bot RL robił zryw przy każdej możliwości
+  (ok. 37 razy na mecz). Dodane: smuga zrywu (grafika) oraz kara RL za zryw bez zagrożenia (−0,1, gdy maksymalne
+  zagrożenie pociskiem liczone jak w bocie rozmytym jest mniejsze niż 0,15, czyli żaden pocisk nie leci albo leci
+  daleko lub obok).
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
@@ -302,6 +308,7 @@ strzały oddane przy dobrym celowaniu, zbliżanie się do amunicji, gdy jej brak
 | zbliżenie się do pakietu, gdy amunicji jest mało (≤ 20%) | +0,001 za piksel | droga do amunicji |
 | podniesienie pakietu przy małej amunicji (przy dużej) | +1,0 (+0,1) | uzupełnianie amunicji, gdy jest potrzebne |
 | zryw | −0,02 | unik nie jest darmowy |
+| zryw bez groźnego pocisku (zagrożenie < 0,15) | −0,1 | koniec z unikami „na zapas” |
 
 Zdarzenia między decyzjami (np. strzał) są oceniane względem obserwacji z decyzji, która do nich doprowadziła:
 strzał oddany po decyzji podjętej, gdy przeciwnik był niewidoczny, jest strzałem na ślepo. Nagroda za poprawę
@@ -433,7 +440,10 @@ Problemy napotkane w smoke teście i rozwiązania:
 
 ## 7. Do zrobienia (stan na 31.10.2026)
 
-- dalsze strojenie reguł bota rozmytego na podstawie turnieju,
-- ocena bota RL, strojenie nagród, ewentualnie self-play,
-- turniej, eksperymenty z parametrami fizyki, wykresy,
-- wizualizacja „myślenia” botów, menu meczu, sprawozdanie.
+- reguły bota rozmytego związane z nową fizyką: gotowość celowania (błąd kąta i prędkość obrotu), pchnięcie
+  (własna prędkość po trafieniu), ewentualnie skrzynie; uporządkowanie dublujących się reguł,
+- dłuższy trening RL (ok. 9 mln kroków na noc): mocniejsza nagroda za celowanie, mniejsza entropia,
+  dłuższy etap z łatwym przeciwnikiem; kara za zbędny zryw już jest,
+- turniej każdy z każdym, eksperymenty z parametrami fizyki, skrypty analizy i wykresy,
+- wizualizacja „myślenia” botów (linie wzroku, raycasty, tor pocisku, aktywne reguły), menu meczu,
+- sprawozdanie i prezentacja.

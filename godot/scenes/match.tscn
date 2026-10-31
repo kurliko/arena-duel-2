@@ -19,7 +19,7 @@ layout = ExtResource("2")
 
 [node name="Fighters" type="Node2D" parent="." unique_id=1193671177]
 
-[node name="Crates" type="Node2D" parent="."]
+[node name="Crates" type="Node2D" parent="." unique_id=104667497]
 
 [node name="Projectiles" type="Node2D" parent="." unique_id=1136671838]
 
@@ -31,7 +31,9 @@ fighters_root = NodePath("../Fighters")
 projectiles_root = NodePath("../Projectiles")
 pickups_root = NodePath("../Pickups")
 crates_root = NodePath("../Crates")
+brain_a_name = "rl"
 brain_b_name = "fuzzy"
+rl_deterministic = true
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=709537900 node_paths=PackedStringArray("match_manager")]
 script = ExtResource("5")

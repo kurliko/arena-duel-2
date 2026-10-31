@@ -112,6 +112,10 @@ func _stat_reward() -> float:
 		var aimed: bool = last_obs != null and last_obs.opponent_visible \
 				and _aim_error(last_obs) < deg_to_rad(rewards.aimed_shot_tolerance_deg)
 		value += shots * (rewards.aimed_shot if aimed else rewards.blind_shot)
+	var dashes: int = s.dashes - _prev_dashes
+	if dashes > 0 and (last_obs == null
+			or Behaviors.max_projectile_threat(last_obs, config) < rewards.dash_threat_threshold):
+		value += dashes * rewards.unnecessary_dash
 	var pickups: int = s.pickups - _prev_pickups
 	if pickups > 0:
 		var was_low: bool = last_obs == null or last_obs.self_ammo <= rewards.ammo_low_fraction
