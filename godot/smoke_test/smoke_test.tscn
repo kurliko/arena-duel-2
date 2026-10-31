@@ -43,7 +43,4 @@ reset_after = 600
 
 [node name="Sync" type="Node" parent="." unique_id=1209894491]
 script = ExtResource("2")
-control_mode = 2
 action_repeat = 4
-onnx_model_path = "res://models/smoke_test.onnx"
-deterministic_inference = false
