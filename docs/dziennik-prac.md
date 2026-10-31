@@ -101,6 +101,18 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   zagrożenie pociskiem liczone jak w bocie rozmytym jest mniejsze niż 0,15, czyli żaden pocisk nie leci albo leci
   daleko lub obok).
 
+- **Reguły rozmyte związane z nową fizyką**: wejścia `aim_error` (błąd celowania przewidywany z bezwładnością
+  obrotu: kąt, przy którym broń sama by się zatrzymała, względem kierunku do przeciwnika) i `self_speed`
+  (prędkość własna jako ułamek prędkości granicznej; powyżej 1 tylko po zryw albo pchnięciu). Nowe reguły:
+  `IF visible IS yes AND distance IS near AND aim_error IS large THEN cover IS high` (obrót broni z bezwładnością
+  trwa, przeciwnik z bliska strzeli pierwszy), to samo z `attack IS low`, `IF visible IS yes AND aim_error IS small
+  AND ammo IS NOT none AND impact_energy IS high THEN attack IS high` oraz `IF self_speed IS fast AND threat IS medium
+  THEN dodge IS low` (pęd i tak wynosi bota z toru pocisku). Baza: 36 reguł, 12 wejść. Wynik z botem skryptowym
+  na 20 meczach bez zmian (14:6 przed i po), wpływ zmierzy turniej z większą liczbą meczów.
+- **Nagrody RL v4 i trening na noc (`rigid_v3`)**: mocniejszy sygnał za celowanie (poprawa celowania 0,1 → 0,5
+  za radian, trzymanie celu 0,002 → 0,01, celny strzał 0,05 → 0,1), mniejsza entropia PPO (0,01 → 0,005),
+  dłuższe curriculum: 3 mln kroków z losowym, 3 mln ze skryptowym, 3 mln z rozmytym.
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg

@@ -3,7 +3,8 @@ extends Resource
 ## Wagi funkcji nagrody bota RL. Wersja 2: do nagród za wynik i trafienia dochodzi kształtowanie nagrody
 ## (sygnał za kroki pośrednie), bo w wersji 1 trafienia były zbyt rzadkie, żeby bot nauczył się celować.
 ## Wersja 3 (fizyka ciał sztywnych): nagroda za zadane obrażenia zamiast stałej za trafienie, bo obrażenia
-## zależą od energii pocisku; nagroda za apteczkę.
+## zależą od energii pocisku; nagroda za apteczkę; kara za zryw bez zagrożenia.
+## Wersja 4: mocniejszy sygnał za celowanie (celowanie z momentem bezwładności okazało się wąskim gardłem).
 
 @export_group("Events")
 ## Za każdy punkt obrażeń zadanych przeciwnikowi (trafienie z prędkością wylotową = 20 HP = +1).
@@ -17,7 +18,7 @@ extends Resource
 ## Za strzał na ślepo: przeciwnik niewidoczny albo błąd celowania większy niż aimed_shot_tolerance_deg.
 @export var blind_shot: float = -0.15
 ## Za strzał przy dobrym celowaniu na widocznego przeciwnika (zachęta do strzelania, gdy ma to sens).
-@export var aimed_shot: float = 0.05
+@export var aimed_shot: float = 0.1
 @export var aimed_shot_tolerance_deg: float = 8.0
 ## Za podniesienie pakietu amunicji, gdy bot miał jej mało (ammo_low_fraction) albo dużo.
 @export var pickup_when_low: float = 1.0
@@ -38,10 +39,10 @@ extends Resource
 ## Za każdą decyzję (żeby bot nie czekał w rogu).
 @export var time_step: float = -0.002
 ## Za każdą decyzję z bronią skierowaną na widocznego przeciwnika (błąd mniejszy niż aim_tolerance_deg).
-@export var aim_on_target: float = 0.002
+@export var aim_on_target: float = 0.01
 @export var aim_tolerance_deg: float = 10.0
 ## Za zmniejszenie błędu celowania na widocznego przeciwnika między decyzjami (za radian).
-@export var aim_improvement_per_rad: float = 0.1
+@export var aim_improvement_per_rad: float = 0.5
 ## Za zbliżenie się do pakietu amunicji, gdy bot ma jej mało (za piksel).
 @export var ammo_approach_per_px: float = 0.001
 

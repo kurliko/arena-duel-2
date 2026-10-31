@@ -220,6 +220,46 @@
           1000
         ]
       }
+    },
+    "aim_error": {
+      "range": [
+        0,
+        180
+      ],
+      "sets": {
+        "small": [
+          0,
+          0,
+          5,
+          15
+        ],
+        "large": [
+          10,
+          45,
+          180,
+          180
+        ]
+      }
+    },
+    "self_speed": {
+      "range": [
+        0,
+        3
+      ],
+      "sets": {
+        "slow": [
+          0,
+          0,
+          0.6,
+          1.0
+        ],
+        "fast": [
+          0.9,
+          1.4,
+          3,
+          3
+        ]
+      }
     }
   },
   "outputs": {
@@ -381,6 +421,10 @@
     "IF hp IS medium AND medkit_distance IS near AND visible IS no THEN heal IS medium",
     "IF hp IS high THEN heal IS low",
     "IF threat IS high THEN heal IS low",
-    "IF hp IS low AND visible IS yes AND medkit_distance IS far THEN heal IS low"
+    "IF hp IS low AND visible IS yes AND medkit_distance IS far THEN heal IS low",
+    "IF visible IS yes AND distance IS near AND aim_error IS large THEN cover IS high",
+    "IF visible IS yes AND distance IS near AND aim_error IS large THEN attack IS low",
+    "IF visible IS yes AND aim_error IS small AND ammo IS NOT none AND impact_energy IS high THEN attack IS high",
+    "IF self_speed IS fast AND threat IS medium THEN dodge IS low"
   ]
 }

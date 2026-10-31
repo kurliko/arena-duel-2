@@ -67,6 +67,7 @@ def main() -> None:
     parser.add_argument("--speedup", type=int, default=8)
     parser.add_argument("--port", type=int, default=11008)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--ent-coef", type=float, default=0.005, help="współczynnik entropii PPO (losowość eksploracji)")
     parser.add_argument("--onnx", type=Path, default=REPO_ROOT / "godot" / "models" / "rl_brain.onnx")
     args = parser.parse_args()
 
@@ -91,7 +92,7 @@ def main() -> None:
             model = PPO(
                 "MultiInputPolicy", env,
                 n_steps=512, batch_size=512, n_epochs=10, learning_rate=3e-4,
-                gamma=0.99, gae_lambda=0.95, ent_coef=0.01, clip_range=0.2,
+                gamma=0.99, gae_lambda=0.95, ent_coef=args.ent_coef, clip_range=0.2,
                 policy_kwargs={"net_arch": [128, 128]},
                 tensorboard_log=str(run_dir / "tb"), verbose=1,
             )

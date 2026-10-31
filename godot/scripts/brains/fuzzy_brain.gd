@@ -69,6 +69,11 @@ func _fuzzy_inputs(obs: Observation) -> Dictionary:
 		"opponent_hp": obs.opponent_hp if obs.opponent_visible else 0.5,
 		"pickup_distance": obs.ammo_pickup_relative_pos.length() * scale if obs.ammo_pickup_available else _config.vision_range,
 		"medkit_distance": obs.medkit_relative_pos.length() * scale if obs.medkit_available else _config.vision_range,
+		# Gotowość celowania przy bezwładności obrotu (stopnie): kąt, przy którym broń sama by się zatrzymała
+		# (obecny kąt + omega / tłumienie kątowe), względem kierunku do przeciwnika. Niewidoczny: 180.
+		"aim_error": _predicted_aim_error_deg(obs),
+		# Własna prędkość jako ułamek prędkości granicznej: powyżej 1 tylko po zryw albo pchnięciu (impulsy).
+		"self_speed": obs.self_velocity.length(),
 	}
 
 
@@ -78,6 +83,14 @@ func _impact_energy(obs: Observation) -> float:
 	var distance: float = obs.opponent_relative_pos.length() * _config.observation_distance_scale
 	var impact_speed: float = maxf(_config.projectile_speed - _config.projectile_linear_damp * distance, 0.0)
 	return pow(impact_speed / _config.projectile_speed, 2.0)
+
+
+func _predicted_aim_error_deg(obs: Observation) -> float:
+	if not obs.opponent_visible:
+		return 180.0
+	var omega: float = obs.self_angular_velocity * _config.max_angular_speed()
+	var resting_angle: float = obs.self_aim_angle + omega / _config.fighter_angular_damp
+	return rad_to_deg(absf(angle_difference(resting_angle, obs.opponent_relative_pos.angle())))
 
 
 func _choose(obs: Observation) -> String:
