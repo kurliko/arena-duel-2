@@ -37,6 +37,11 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   trafienia z rykoszetu, trafienia własnym pociskiem, uniki i zbieranie amunicji; dwa przebiegi z tym samym
   ziarnem dają identyczne wyniki.
 
+- **Zapis wyników do CSV** w trybie wsadowym (`--csv=...`): jeden wiersz na mecz z wynikiem, statystykami obu
+  botów i parametrami fizyki, dopisywanie kolejnych serii do jednego pliku. Druga konfiguracja `no_ricochet.tres`
+  (bez rykoszetów) jako pierwszy wariant do eksperymentów z fizyką. Poprawka kolejności argumentów
+  (`--config` przed `--seed`) i dokładności limitu czasu meczu.
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
@@ -117,7 +122,14 @@ Po zmianie mecze są wyrównane (4:4), a wyniki dalej w pełni powtarzalne. Wnio
 areny zapewnia równe szanse, ale przy deterministycznych przeciwnikach potrzebny jest mechanizm łamania
 symetrii, a percepcja oparta na linii wzroku silnie wpływa na zachowanie botów.
 
-### 3.6. Powtarzalność wyników
+### 3.6. Zbieranie danych do eksperymentów
+
+Każdy mecz trybu wsadowego zapisuje wiersz CSV z metrykami wymaganymi w temacie (zwycięzca, zużycie amunicji,
+celność, otrzymane obrażenia) oraz metrykami związanymi z fizyką (trafienia z rykoszetu, samotrafienia, uniki).
+W każdym wierszu zapisujemy też parametry fizyki z konfiguracji, więc wyniki różnych eksperymentów można
+połączyć w jednym pliku i grupować w analizie (pandas) bez dodatkowych metadanych.
+
+### 3.7. Powtarzalność wyników
 
 Każdy mecz ma ziarno `rng_seed + numer meczu`. Ziarno ustawia globalny generator i generatory obu mózgów
 (różne ziarna dla A i B). Strony areny zmieniają się co mecz. Dwa przebiegi serii z tym samym ziarnem dają
@@ -169,7 +181,6 @@ Problemy napotkane w smoke teście i rozwiązania:
 
 ## 7. Do zrobienia (stan na 31.10.2026)
 
-- zapis wyników meczów do CSV w trybie wsadowym,
 - silnik logiki rozmytej i `FuzzyBrain`,
 - środowisko RL na właściwej arenie (obserwacje, nagrody, curriculum) i trening,
 - turniej, eksperymenty z parametrami fizyki, wykresy,

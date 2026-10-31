@@ -56,8 +56,29 @@ Seria meczów bez grafiki (tryb wsadowy), np. 20 meczów skryptowy kontra losowy
 ```
 Godot_v4.7.2-stable_mono_win64_console.exe --headless --fixed-fps 60 --path godot -- --matches=20 --brain-a=scripted --brain-b=random --seed=7
 ```
-Argumenty po `--`: `--brain-a`, `--brain-b`, `--matches` (0 = bez końca), `--seed`, `--config=res://data/configs/....tres`.
+Argumenty po `--`: `--brain-a`, `--brain-b`, `--matches` (0 = bez końca), `--seed`, `--config=res://data/configs/....tres`,
+`--csv=results/plik.csv` (zapis wyników; ścieżka względna liczona od katalogu repozytorium).
 Ten sam seed daje identyczne wyniki.
+
+Przykład: 50 meczów bez rykoszetów z zapisem do CSV:
+```
+Godot_v4.7.2-stable_mono_win64_console.exe --headless --fixed-fps 60 --path godot -- --matches=50 --brain-a=scripted --brain-b=random --config=res://data/configs/no_ricochet.tres --csv=results/no_ricochet.csv
+```
+
+### Format CSV
+
+Jeden wiersz na mecz; kolejne serie dopisują się do istniejącego pliku (nagłówek tylko raz).
+
+| Kolumny | Znaczenie |
+|---|---|
+| `match_index`, `seed`, `config` | numer meczu w serii, ziarno, nazwa pliku konfiguracji |
+| `brain_a`, `brain_b`, `sides_swapped` | mózgi i czy A startował ze strony B |
+| `winner` (`A`/`B`/`draw`), `winner_brain`, `reason` (`death`/`time`), `duration` | wynik meczu |
+| `hp`, `shots`, `hits`, `accuracy`, `ammo_used`, `damage_taken` z sufiksem `_a`/`_b` | statystyki botów |
+| `ricochet_hits`, `self_hits`, `dashes`, `pickups` z sufiksem `_a`/`_b` | trafienia z rykoszetu, samotrafienia, uniki, podniesione pakiety |
+| `projectile_speed`, `max_bounces`, `bounce_speed_loss`, `acceleration`, `friction`, `max_speed` | parametry fizyki użyte w meczu |
+
+Gotowe konfiguracje: `default.tres`, `no_ricochet.tres` (pociski znikają na pierwszej ścianie).
 
 ## Smoke test Godot RL Agents
 

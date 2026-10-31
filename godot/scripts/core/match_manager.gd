@@ -4,12 +4,14 @@ extends Node
 ## koniec po śmierci bota albo limicie czasu, seria meczów ze zmianą stron.
 ##
 ## Argumenty użytkownika (po `--`): --brain-a=NAZWA --brain-b=NAZWA --matches=N --seed=S --config=res://...
+##   --csv=ŚCIEŻKA (dopisywanie wyników; ścieżka względna liczona od katalogu repozytorium)
 
 signal match_started(match_index: int)
 signal match_finished(result: MatchResult)
 
 const COLOR_A: Color = Color(0.3, 0.6, 1.0)
 const COLOR_B: Color = Color(1.0, 0.4, 0.35)
+const TIME_EPSILON: float = 1e-4
 
 @export var config: GameConfig
 @export var arena: Arena
@@ -20,6 +22,8 @@ const COLOR_B: Color = Color(1.0, 0.4, 0.35)
 @export var brain_b_name: String = BrainFactory.RANDOM
 ## Liczba meczów do rozegrania, potem wyjście z gry (0 = bez końca).
 @export var matches_to_play: int = 0
+## Plik CSV z wynikami (pusty = bez zapisu).
+@export var csv_path: String = ""
 
 var fighter_a: Fighter
 var fighter_b: Fighter
@@ -36,12 +40,18 @@ var draws: int = 0
 
 var _tick: int = 0
 var _someone_died: bool = false
+var _sides_swapped: bool = false
+var _csv: CsvWriter
 
 
 func _ready() -> void:
 	# Decyzje zapadają przed ruchem postaci i pocisków w tym samym ticku.
 	process_physics_priority = -10
 	_apply_command_line()
+	if not csv_path.is_empty():
+		_csv = CsvWriter.new()
+		if _csv.open(csv_path) == OK:
+			print("wyniki zapisywane do ", _csv.path)
 	fighter_a = _create_fighter(COLOR_A, MatchResult.WINNER_A)
 	fighter_b = _create_fighter(COLOR_B, MatchResult.WINNER_B)
 	for point: Vector2 in arena.layout.pickup_points:
@@ -53,21 +63,20 @@ func _ready() -> void:
 
 
 func _apply_command_line() -> void:
+	var args: Dictionary = {}
 	for arg: String in OS.get_cmdline_user_args():
 		var parts: PackedStringArray = arg.trim_prefix("--").split("=", true, 1)
-		if parts.size() != 2:
-			continue
-		match parts[0]:
-			"brain-a":
-				brain_a_name = parts[1]
-			"brain-b":
-				brain_b_name = parts[1]
-			"matches":
-				matches_to_play = parts[1].to_int()
-			"seed":
-				config.rng_seed = parts[1].to_int()
-			"config":
-				config = load(parts[1]) as GameConfig
+		if parts.size() == 2:
+			args[parts[0]] = parts[1]
+	# Konfiguracja najpierw, żeby pozostałe argumenty (np. seed) trafiły do właściwego zasobu.
+	if args.has("config"):
+		config = load(args["config"]) as GameConfig
+	brain_a_name = args.get("brain-a", brain_a_name)
+	brain_b_name = args.get("brain-b", brain_b_name)
+	matches_to_play = int(args.get("matches", matches_to_play))
+	csv_path = args.get("csv", csv_path)
+	if args.has("seed"):
+		config.rng_seed = int(args["seed"])
 
 
 func _create_fighter(color: Color, label: String) -> Fighter:
@@ -92,6 +101,7 @@ func start_match() -> void:
 		pickup.reset()
 	# Zmiana stron co mecz, żeby układ areny nie faworyzował żadnego mózgu.
 	var swap: bool = match_index % 2 == 1
+	_sides_swapped = swap
 	var spawns: Array[Vector2] = arena.layout.spawn_points
 	var spawn_a: Vector2 = spawns[1] if swap else spawns[0]
 	var spawn_b: Vector2 = spawns[0] if swap else spawns[1]
@@ -122,7 +132,8 @@ func _physics_process(delta: float) -> void:
 				Perception.build(fighter_b, fighter_a, arena, projectiles, pickups, config)))
 	_tick += 1
 	elapsed += delta
-	if elapsed >= config.max_match_seconds:
+	# Tolerancja na błąd zaokrąglenia sumy kroków (inaczej limit 60 s kończyłby się po 60,017 s).
+	if elapsed >= config.max_match_seconds - TIME_EPSILON:
 		_finish(MatchResult.REASON_TIME)
 
 
@@ -153,6 +164,8 @@ func _finish(reason: String) -> void:
 	var result := MatchResult.new()
 	result.match_index = match_index
 	result.rng_seed = config.rng_seed + match_index
+	result.config_name = config.resource_path.get_file().get_basename()
+	result.sides_swapped = _sides_swapped
 	result.brain_a = brain_a_name
 	result.brain_b = brain_b_name
 	result.reason = reason
@@ -170,11 +183,15 @@ func _finish(reason: String) -> void:
 		_:
 			draws += 1
 	print(result.summary())
+	if _csv != null:
+		_csv.write(result, config)
 	match_finished.emit(result)
 	match_index += 1
 
 	if matches_to_play > 0 and match_index >= matches_to_play:
 		print("koniec serii: A (%s) %d, B (%s) %d, remisy %d" % [brain_a_name, wins_a, brain_b_name, wins_b, draws])
+		if _csv != null:
+			_csv.close()
 		get_tree().quit()
 		return
 	if not is_headless():
