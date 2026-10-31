@@ -4,11 +4,14 @@ extends AIController2D
 ## Obserwację ustawia RLBrain w każdej decyzji; Sync odczytuje ją (get_obs), wysyła do Pythona albo modelu ONNX
 ## i zwraca akcję (set_action). Nagroda jest liczona z przyrostów statystyk bota między decyzjami.
 
+## Klucze MUSZĄ być w kolejności alfabetycznej: Python (godot-rl) sortuje przestrzeń akcji po nazwach,
+## więc model ONNX zwraca logity w tej kolejności, a Sync dekoduje je w kolejności tego słownika.
+## Inna kolejność nie przeszkadza w treningu (akcje przychodzą z nazwami), ale psuje grę z modelem ONNX.
 const ACTION_SPACE: Dictionary = {
-	"move": {"size": Action.MOVE_DIRECTIONS, "action_type": "discrete"},
-	"turn": {"size": Action.TURN_OPTIONS, "action_type": "discrete"},
-	"shoot": {"size": 2, "action_type": "discrete"},
 	"dash": {"size": 2, "action_type": "discrete"},
+	"move": {"size": Action.MOVE_DIRECTIONS, "action_type": "discrete"},
+	"shoot": {"size": 2, "action_type": "discrete"},
+	"turn": {"size": Action.TURN_OPTIONS, "action_type": "discrete"},
 }
 ## Epizod kończy MatchManager (koniec meczu), nie licznik kroków pluginu.
 const NO_STEP_LIMIT: int = 1 << 30
@@ -27,6 +30,7 @@ var _prev_shots: int = 0
 var _prev_self_hits: int = 0
 var _prev_damage: float = 0.0
 var _prev_pickups: int = 0
+var _prev_dashes: int = 0
 
 
 func setup(cfg: GameConfig, reward_config: RewardConfig, owner_fighter: Fighter) -> void:
@@ -40,19 +44,39 @@ func setup(cfg: GameConfig, reward_config: RewardConfig, owner_fighter: Fighter)
 
 func begin_episode() -> void:
 	_snapshot()
+	last_obs = null
 	episode_reward = 0.0
 	_won = false
 	current_action = Action.idle()
 
 
 ## Wywoływane w każdej decyzji, zanim Sync odczyta obserwację i nagrodę.
+## Zdarzenia od poprzedniej decyzji są skutkiem akcji wybranej na podstawie poprzedniej obserwacji (last_obs),
+## więc to ją bierzemy pod uwagę, oceniając np. czy strzał był oddany na ślepo.
 func on_decision(obs: Observation) -> void:
+	_add(rewards.time_step + _stat_reward() + _shaping_reward(last_obs, obs))
 	last_obs = obs
-	_add(rewards.time_step + _stat_reward())
-	if obs.opponent_visible:
-		var aim_error: float = absf(angle_difference(obs.self_aim_angle, obs.opponent_relative_pos.angle()))
+
+
+## Kształtowanie nagrody: sygnał za kroki pośrednie prowadzące do trafień i do amunicji.
+func _shaping_reward(previous: Observation, current: Observation) -> float:
+	var value: float = 0.0
+	if current.opponent_visible:
+		var aim_error: float = _aim_error(current)
 		if aim_error < deg_to_rad(rewards.aim_tolerance_deg):
-			_add(rewards.aim_on_target)
+			value += rewards.aim_on_target
+		if previous != null and previous.opponent_visible:
+			value += (_aim_error(previous) - aim_error) * rewards.aim_improvement_per_rad
+	if previous != null and previous.self_ammo <= rewards.ammo_low_fraction \
+			and previous.ammo_pickup_available and current.ammo_pickup_available:
+		var scale: float = config.observation_distance_scale
+		var approach: float = (previous.ammo_pickup_relative_pos.length() - current.ammo_pickup_relative_pos.length()) * scale
+		value += approach * rewards.ammo_approach_per_px
+	return value
+
+
+func _aim_error(obs: Observation) -> float:
+	return absf(angle_difference(obs.self_aim_angle, obs.opponent_relative_pos.angle()))
 
 
 ## Koniec meczu: nagroda za wynik i flaga końca epizodu dla Pythona.
@@ -72,13 +96,23 @@ func _add(value: float) -> void:
 	episode_reward += value
 
 
+## Nagroda za zdarzenia od poprzedniej decyzji (przyrosty statystyk bota), oceniana względem last_obs.
 func _stat_reward() -> float:
 	var s: FighterStats = fighter.stats
+	var shots: int = s.shots - _prev_shots
 	var value: float = (s.hits - _prev_hits) * rewards.hit \
 			+ (s.damage_taken - _prev_damage) * rewards.damage_taken_per_hp \
 			+ (s.self_hits - _prev_self_hits) * rewards.self_hit \
-			+ (s.shots - _prev_shots) * rewards.shot \
-			+ (s.pickups - _prev_pickups) * rewards.pickup
+			+ shots * rewards.shot \
+			+ (s.dashes - _prev_dashes) * rewards.dash
+	if shots > 0:
+		var aimed: bool = last_obs != null and last_obs.opponent_visible \
+				and _aim_error(last_obs) < deg_to_rad(rewards.aimed_shot_tolerance_deg)
+		value += shots * (rewards.aimed_shot if aimed else rewards.blind_shot)
+	var pickups: int = s.pickups - _prev_pickups
+	if pickups > 0:
+		var was_low: bool = last_obs == null or last_obs.self_ammo <= rewards.ammo_low_fraction
+		value += pickups * (rewards.pickup_when_low if was_low else rewards.pickup)
 	_snapshot()
 	return value
 
@@ -90,6 +124,7 @@ func _snapshot() -> void:
 	_prev_self_hits = s.self_hits
 	_prev_damage = s.damage_taken
 	_prev_pickups = s.pickups
+	_prev_dashes = s.dashes
 
 
 func get_obs() -> Dictionary:

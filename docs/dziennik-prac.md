@@ -66,6 +66,10 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   około 35 min): średnia nagroda w etapie z losowym wzrosła z −3,3 do −2,4, ale odsetek zwycięstw był 0 we wszystkich
   etapach. Analiza nieudanej wersji nagród opisana w sekcji 3.7.
 
+- **Nagrody RL v2 (kształtowanie nagrody)** i poprawka błędu kolejności akcji przy inferencji ONNX (sekcja 3.7).
+  Test 400 tys. kroków z losowym przeciwnikiem: średnia nagroda w epizodzie z −4,8 do +0,6; w meczach testowych
+  bot RL zbiera amunicję, trafia i wygrywa z losowym 4:2; ze skryptowym przegrywa 0:6 (nie trenował jeszcze z nim).
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
@@ -213,7 +217,7 @@ z flagą obecności, więc bot RL nie dostaje więcej informacji niż bot rozmyt
 
 **Akcje**: ta sama dyskretna przestrzeń co u innych botów (MultiDiscrete: ruch 9, obrót 5, strzał 2, unik 2).
 
-**Nagroda** (`RewardConfig`, wartości startowe):
+**Nagroda, wersja 1** (`RewardConfig`, wartości startowe):
 
 | Zdarzenie | Waga |
 |---|---|
@@ -262,6 +266,36 @@ kosztują, a zmniejszają otrzymane obrażenia, więc polityka szybko się na ni
 Wniosek: przy fizyce z czasem lotu pocisku i ograniczoną amunicją sama nagroda za wynik i trafienia jest za rzadka.
 Potrzebne jest kształtowanie nagrody (reward shaping), które daje sygnał za kroki pośrednie: poprawę celowania,
 strzały oddane przy dobrym celowaniu, zbliżanie się do amunicji, gdy jej brakuje.
+
+**Wersja 2 nagród (kształtowanie nagrody).** Do nagród z wersji 1 doszły składniki za kroki pośrednie:
+
+| Składnik | Waga | Cel |
+|---|---|---|
+| strzał na ślepo (przeciwnik niewidoczny albo błąd celowania > 8°) | −0,15 | koniec ze strzelaniem bez celu |
+| strzał przy dobrym celowaniu (błąd ≤ 8°) | +0,05 | strzelać wtedy, gdy ma to sens |
+| zmniejszenie błędu celowania na widocznego przeciwnika | +0,1 za radian | ciągły sygnał do obracania broni w stronę przeciwnika |
+| zbliżenie się do pakietu, gdy amunicji jest mało (≤ 20%) | +0,001 za piksel | droga do amunicji |
+| podniesienie pakietu przy małej amunicji (przy dużej) | +1,0 (+0,1) | uzupełnianie amunicji, gdy jest potrzebne |
+| zryw | −0,02 | unik nie jest darmowy |
+
+Zdarzenia między decyzjami (np. strzał) są oceniane względem obserwacji z decyzji, która do nich doprowadziła:
+strzał oddany po decyzji podjętej, gdy przeciwnik był niewidoczny, jest strzałem na ślepo. Nagroda za poprawę
+celowania jest różnicą „potencjału” (błędu celowania) między decyzjami, więc obracanie broni tam i z powrotem
+nic nie daje; opłaca się tylko trwałe naprowadzenie na cel.
+
+**Błąd kolejności akcji przy inferencji ONNX.** Po treningu z nagrodami v2 średnia nagroda rosła, ale bot w grze
+zachowywał się tak samo jak po wersji 1. Porównanie modelu z Pythona i eksportu ONNX na tych samych danych dało
+pełną zgodność (200/200), za to przestrzeń akcji po stronie Pythona miała postać `MultiDiscrete([2 9 2 5])`:
+godot-rl sortuje akcje alfabetycznie (`dash, move, shoot, turn`), a węzeł Sync w grze dekodował wyjście ONNX
+w kolejności słownika akcji w GDScript (`move, turn, shoot, dash`). W treningu błąd nie występował, bo Python
+odsyła akcje z nazwami; dotyczył tylko gry z modelem ONNX. Poprawka: klucze przestrzeni akcji w kolejności
+alfabetycznej (z komentarzem w kodzie). Ponowna ocena modelu z wersji 1 po poprawce potwierdziła, że ten model
+rzeczywiście nauczył się złej strategii (5 strzałów na start, zryw przy każdej możliwości), więc analiza
+nagród v1 była trafna, a błąd kolejności był osobnym problemem.
+
+**Wyniki wersji 2** (400 tys. kroków, tylko przeciwnik losowy): średnia nagroda w epizodzie wzrosła z −4,8 do +0,6.
+W meczach testowych bot RL podnosi 2–5 pakietów amunicji na mecz, trafia do 4 razy i wygrywa z losowym 4:2.
+Ze skryptowym przegrywa 0:6, czego należy się spodziewać przed etapem curriculum z tym przeciwnikiem.
 
 ### 3.8. Zbieranie danych do eksperymentów
 
