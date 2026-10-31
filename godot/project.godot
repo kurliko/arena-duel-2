@@ -14,6 +14,12 @@ config/name="Arena Duel"
 run/main_scene="res://scenes/match.tscn"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=900
+window/stretch/mode="canvas_items"
+
 [dotnet]
 
 project/assembly_name="ArenaDuel"
@@ -21,13 +27,6 @@ project/assembly_name="ArenaDuel"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_rl_agents/plugin.cfg")
-
-[display]
-
-window/size/viewport_width=1280
-window/size/viewport_height=900
-window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
 
 [layer_names]
 
