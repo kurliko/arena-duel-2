@@ -88,6 +88,13 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   startowej z transformacją rodzica. Przy okazji poprawiony odczyt `is_success` (flaga wygranej kasowana przed
   odczytem przez Pythona, przez co odsetek zwycięstw w logach był zawsze 0). Trening uruchomiony ponownie.
 
+- **Trening `rigid_v2`** (po poprawce, 2,5 mln kroków: losowy 0,5 mln, skryptowy 1 mln, rozmyty 1 mln): odsetek
+  zwycięstw w treningu ok. 40% z losowym, 6–9% ze skryptowym, ok. 5% z rozmytym. Mecze testowe (10 na parę):
+  z losowym 4:2 (4 remisy), ze skryptowym 0:10, z rozmytym 1:8. Bot RL zbiera amunicję (2–3 pakiety na mecz)
+  i apteczki, unika pocisków, ale prawie nie trafia (0,1–0,4 trafienia na mecz). Wąskie gardło: celowanie
+  z momentem bezwładności (rozpędzenie i wyhamowanie broni na celu przy decyzji co 4 ticki) przy krótkim etapie
+  nauki z łatwym przeciwnikiem.
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
