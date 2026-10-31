@@ -150,6 +150,36 @@ Opcje: `--rl-model=res://models/....onnx`, `--rl-deterministic=1` (zawsze najbar
 **Podgląd treningu w edytorze:** scena `res://scenes/training.tscn` pokazuje wszystkie areny naraz. Uruchom najpierw
 skrypt treningowy z `--arenas` zgodnym ze sceną (domyślnie 8), potem F6 w edytorze. Bez Pythona boty RL stoją.
 
+### Trening na innym komputerze
+
+1. Zainstaluj Godota 4.7.2 .NET, .NET SDK 8, Pythona 3.12 (z „Add to PATH”) i Gita.
+2. Sklonuj repo i przygotuj środowisko (PowerShell):
+   ```
+   git clone https://github.com/kurliko/arena-duel.git
+   cd arena-duel
+   python -m venv venv
+   .\venv\Scripts\pip install -r requirements.txt
+   dotnet build godot\ArenaDuel.csproj
+   ```
+3. Skrypt treningowy domyślnie szuka Godota w `C:\Tools\Godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64\`.
+   Jeśli Godot leży gdzie indziej, przed treningiem wskaż plik `_console.exe` (w tym samym oknie PowerShella):
+   ```
+   $env:GODOT_BIN = "C:\sciezka\do\Godot_v4.7.2-stable_mono_win64_console.exe"
+   ```
+4. Uruchom trening (przykład z długim curriculum, ok. 9 mln kroków):
+   ```
+   .\venv\Scripts\python training\train_rl.py --curriculum random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
+   ```
+   Na słabszym komputerze zmniejsz obciążenie: `--arenas 4` albo `--speedup 4` (trening potrwa dłużej).
+   Komputer nie może przejść w uśpienie w trakcie treningu.
+5. Po treningu:
+   - zacommituj i wypchnij `godot/models/rl_brain.onnx` (opis commita po angielsku),
+   - folder `training/runs/<nazwa>/` jest w `.gitignore` i **nie trafia na GitHuba**; logi TensorBoarda
+     (`training/runs/<nazwa>/tb/`) potrzebne do wykresów w sprawozdaniu przekaż osobno (np. spakowane).
+
+Przerwany trening można wznowić od ostatniego checkpointu (zapis co 100 tys. kroków):
+`--resume training\runs\<nazwa>\checkpoints\<plik>.zip`, z pozostałymi etapami w `--curriculum`.
+
 ## Struktura
 
 Patrz sekcja 11 w [docs/project-context.md](docs/project-context.md).
