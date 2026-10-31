@@ -1,20 +1,353 @@
 {
   "description": "Baza reguł FuzzyBrain. Wejścia liczone z Observation, wyjścia to opłacalność zachowań (0..1). Zbiory: 3 punkty = trójkąt, 4 punkty = trapez.",
   "inputs": {
-    "distance": {"range": [0, 1000], "sets": {"near": [0, 0, 150, 300], "medium": [200, 400, 600], "far": [500, 700, 1000, 1000]}},
-    "hp": {"range": [0, 1], "sets": {"low": [0, 0, 0.25, 0.45], "medium": [0.3, 0.5, 0.7], "high": [0.55, 0.75, 1, 1]}},
-    "ammo": {"range": [0, 1], "sets": {"none": [0, 0, 0.05, 0.15], "low": [0.05, 0.2, 0.4], "high": [0.3, 0.5, 1, 1]}},
-    "visible": {"range": [0, 1], "sets": {"no": [0, 0, 0.4, 0.6], "yes": [0.4, 0.6, 1, 1]}},
-    "threat": {"range": [0, 1], "sets": {"low": [0, 0, 0.15, 0.35], "medium": [0.2, 0.45, 0.7], "high": [0.5, 0.75, 1, 1]}},
-    "opponent_speed": {"range": [0, 1.5], "sets": {"slow": [0, 0, 0.3, 0.6], "fast": [0.4, 0.8, 1.5, 1.5]}},
-    "opponent_hp": {"range": [0, 1], "sets": {"low": [0, 0, 0.25, 0.45], "high": [0.55, 0.75, 1, 1]}},
-    "pickup_distance": {"range": [0, 1000], "sets": {"near": [0, 0, 150, 350], "far": [250, 600, 1000, 1000]}}
+    "distance": {
+      "range": [
+        0,
+        1000
+      ],
+      "sets": {
+        "near": [
+          0,
+          0,
+          150,
+          300
+        ],
+        "medium": [
+          200,
+          400,
+          600
+        ],
+        "far": [
+          500,
+          700,
+          1000,
+          1000
+        ]
+      }
+    },
+    "hp": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.25,
+          0.45
+        ],
+        "medium": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "high": [
+          0.55,
+          0.75,
+          1,
+          1
+        ]
+      }
+    },
+    "ammo": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "none": [
+          0,
+          0,
+          0.05,
+          0.15
+        ],
+        "low": [
+          0.05,
+          0.2,
+          0.4
+        ],
+        "high": [
+          0.3,
+          0.5,
+          1,
+          1
+        ]
+      }
+    },
+    "visible": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "no": [
+          0,
+          0,
+          0.4,
+          0.6
+        ],
+        "yes": [
+          0.4,
+          0.6,
+          1,
+          1
+        ]
+      }
+    },
+    "threat": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.15,
+          0.35
+        ],
+        "medium": [
+          0.2,
+          0.45,
+          0.7
+        ],
+        "high": [
+          0.5,
+          0.75,
+          1,
+          1
+        ]
+      }
+    },
+    "opponent_speed": {
+      "range": [
+        0,
+        1.5
+      ],
+      "sets": {
+        "slow": [
+          0,
+          0,
+          0.3,
+          0.6
+        ],
+        "fast": [
+          0.4,
+          0.8,
+          1.5,
+          1.5
+        ]
+      }
+    },
+    "opponent_hp": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.25,
+          0.45
+        ],
+        "high": [
+          0.55,
+          0.75,
+          1,
+          1
+        ]
+      }
+    },
+    "pickup_distance": {
+      "range": [
+        0,
+        1000
+      ],
+      "sets": {
+        "near": [
+          0,
+          0,
+          150,
+          350
+        ],
+        "far": [
+          250,
+          600,
+          1000,
+          1000
+        ]
+      }
+    },
+    "impact_energy": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.3,
+          0.5
+        ],
+        "high": [
+          0.4,
+          0.7,
+          1,
+          1
+        ]
+      }
+    },
+    "medkit_distance": {
+      "range": [
+        0,
+        1000
+      ],
+      "sets": {
+        "near": [
+          0,
+          0,
+          200,
+          400
+        ],
+        "far": [
+          300,
+          650,
+          1000,
+          1000
+        ]
+      }
+    }
   },
   "outputs": {
-    "attack": {"range": [0, 1], "sets": {"low": [0, 0, 0.2, 0.4], "medium": [0.3, 0.5, 0.7], "high": [0.6, 0.8, 1, 1]}},
-    "dodge": {"range": [0, 1], "sets": {"low": [0, 0, 0.2, 0.4], "medium": [0.3, 0.5, 0.7], "high": [0.6, 0.8, 1, 1]}},
-    "cover": {"range": [0, 1], "sets": {"low": [0, 0, 0.2, 0.4], "medium": [0.3, 0.5, 0.7], "high": [0.6, 0.8, 1, 1]}},
-    "collect": {"range": [0, 1], "sets": {"low": [0, 0, 0.2, 0.4], "medium": [0.3, 0.5, 0.7], "high": [0.6, 0.8, 1, 1]}}
+    "attack": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.2,
+          0.4
+        ],
+        "medium": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "high": [
+          0.6,
+          0.8,
+          1,
+          1
+        ]
+      }
+    },
+    "dodge": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.2,
+          0.4
+        ],
+        "medium": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "high": [
+          0.6,
+          0.8,
+          1,
+          1
+        ]
+      }
+    },
+    "cover": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.2,
+          0.4
+        ],
+        "medium": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "high": [
+          0.6,
+          0.8,
+          1,
+          1
+        ]
+      }
+    },
+    "collect": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.2,
+          0.4
+        ],
+        "medium": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "high": [
+          0.6,
+          0.8,
+          1,
+          1
+        ]
+      }
+    },
+    "heal": {
+      "range": [
+        0,
+        1
+      ],
+      "sets": {
+        "low": [
+          0,
+          0,
+          0.2,
+          0.4
+        ],
+        "medium": [
+          0.3,
+          0.5,
+          0.7
+        ],
+        "high": [
+          0.6,
+          0.8,
+          1,
+          1
+        ]
+      }
+    }
   },
   "rules": [
     "IF visible IS yes AND ammo IS high AND hp IS high THEN attack IS high",
@@ -25,24 +358,29 @@
     "IF visible IS no AND ammo IS NOT none AND hp IS NOT low THEN attack IS medium",
     "IF ammo IS none THEN attack IS low",
     "IF threat IS high THEN attack IS low",
-
     "IF hp IS low AND visible IS yes THEN cover IS high",
     "IF hp IS low AND distance IS near THEN cover IS high",
     "IF ammo IS none AND visible IS yes AND pickup_distance IS far THEN cover IS high",
     "IF visible IS yes AND hp IS medium AND opponent_hp IS high THEN cover IS medium",
     "IF visible IS no AND hp IS low THEN cover IS medium",
     "IF hp IS high AND ammo IS high THEN cover IS low",
-
     "IF threat IS high THEN dodge IS high",
     "IF threat IS medium AND distance IS near THEN dodge IS high",
     "IF threat IS medium AND hp IS NOT high THEN dodge IS medium",
     "IF threat IS low THEN dodge IS low",
-
     "IF ammo IS none THEN collect IS high",
     "IF ammo IS low AND pickup_distance IS near THEN collect IS high",
     "IF ammo IS low AND visible IS no THEN collect IS medium",
     "IF ammo IS high THEN collect IS low",
     "IF ammo IS low AND visible IS yes AND hp IS high THEN collect IS low",
-    "IF threat IS high THEN collect IS low"
+    "IF threat IS high THEN collect IS low",
+    "IF visible IS yes AND impact_energy IS low THEN attack IS low",
+    "IF visible IS yes AND impact_energy IS high AND ammo IS NOT none THEN attack IS high",
+    "IF hp IS low AND medkit_distance IS near THEN heal IS high",
+    "IF hp IS low AND visible IS no THEN heal IS high",
+    "IF hp IS medium AND medkit_distance IS near AND visible IS no THEN heal IS medium",
+    "IF hp IS high THEN heal IS low",
+    "IF threat IS high THEN heal IS low",
+    "IF hp IS low AND visible IS yes AND medkit_distance IS far THEN heal IS low"
   ]
 }

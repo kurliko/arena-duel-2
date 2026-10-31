@@ -5,10 +5,11 @@ extends RefCounted
 
 ## Parametry konfiguracji zapisywane w każdym wierszu (do eksperymentów z fizyką).
 const CONFIG_COLUMNS: Array[String] = [
-	"projectile_speed", "max_bounces", "bounce_speed_loss", "acceleration", "friction", "max_speed",
+	"projectile_speed", "projectile_mass", "projectile_linear_damp", "projectile_restitution", "max_bounces",
+	"fighter_mass", "fighter_inertia", "move_force", "fighter_linear_damp", "crate_mass",
 ]
 const FIGHTER_COLUMNS: Array[String] = [
-	"hp", "shots", "hits", "accuracy", "ammo_used", "damage_taken",
+	"hp", "shots", "hits", "accuracy", "ammo_used", "damage_dealt", "damage_taken", "medkits",
 	"ricochet_hits", "self_hits", "dashes", "pickups",
 ]
 
@@ -76,7 +77,7 @@ func write(result: MatchResult, config: GameConfig) -> void:
 func _fighter_values(hp: float, stats: FighterStats) -> PackedStringArray:
 	return PackedStringArray([
 		"%.1f" % hp, str(stats.shots), str(stats.hits), "%.3f" % stats.accuracy(), str(stats.shots),
-		"%.1f" % stats.damage_taken, str(stats.ricochet_hits), str(stats.self_hits),
+		"%.1f" % stats.damage_dealt, "%.1f" % stats.damage_taken, str(stats.medkits), str(stats.ricochet_hits), str(stats.self_hits),
 		str(stats.dashes), str(stats.pickups),
 	])
 

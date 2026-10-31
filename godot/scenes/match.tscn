@@ -19,15 +19,18 @@ layout = ExtResource("2")
 
 [node name="Fighters" type="Node2D" parent="." unique_id=1193671177]
 
+[node name="Crates" type="Node2D" parent="."]
+
 [node name="Projectiles" type="Node2D" parent="." unique_id=1136671838]
 
-[node name="MatchManager" type="Node" parent="." unique_id=2131561916 node_paths=PackedStringArray("arena", "fighters_root", "projectiles_root", "pickups_root")]
+[node name="MatchManager" type="Node" parent="." unique_id=2131561916 node_paths=PackedStringArray("arena", "fighters_root", "projectiles_root", "pickups_root", "crates_root")]
 script = ExtResource("3")
 config = ExtResource("4")
 arena = NodePath("../Arena")
 fighters_root = NodePath("../Fighters")
 projectiles_root = NodePath("../Projectiles")
 pickups_root = NodePath("../Pickups")
+crates_root = NodePath("../Crates")
 brain_b_name = "fuzzy"
 
 [node name="HUD" type="CanvasLayer" parent="." unique_id=709537900 node_paths=PackedStringArray("match_manager")]

@@ -31,6 +31,8 @@ var _prev_self_hits: int = 0
 var _prev_damage: float = 0.0
 var _prev_pickups: int = 0
 var _prev_dashes: int = 0
+var _prev_damage_dealt: float = 0.0
+var _prev_medkits: int = 0
 
 
 func setup(cfg: GameConfig, reward_config: RewardConfig, owner_fighter: Fighter) -> void:
@@ -100,7 +102,7 @@ func _add(value: float) -> void:
 func _stat_reward() -> float:
 	var s: FighterStats = fighter.stats
 	var shots: int = s.shots - _prev_shots
-	var value: float = (s.hits - _prev_hits) * rewards.hit \
+	var value: float = (s.damage_dealt - _prev_damage_dealt) * rewards.damage_dealt_per_hp \
 			+ (s.damage_taken - _prev_damage) * rewards.damage_taken_per_hp \
 			+ (s.self_hits - _prev_self_hits) * rewards.self_hit \
 			+ shots * rewards.shot \
@@ -113,6 +115,10 @@ func _stat_reward() -> float:
 	if pickups > 0:
 		var was_low: bool = last_obs == null or last_obs.self_ammo <= rewards.ammo_low_fraction
 		value += pickups * (rewards.pickup_when_low if was_low else rewards.pickup)
+	var medkits: int = s.medkits - _prev_medkits
+	if medkits > 0:
+		var hp_was_low: bool = last_obs == null or last_obs.self_hp <= rewards.hp_low_fraction
+		value += medkits * (rewards.medkit_when_low if hp_was_low else rewards.medkit)
 	_snapshot()
 	return value
 
@@ -125,6 +131,8 @@ func _snapshot() -> void:
 	_prev_damage = s.damage_taken
 	_prev_pickups = s.pickups
 	_prev_dashes = s.dashes
+	_prev_damage_dealt = s.damage_dealt
+	_prev_medkits = s.medkits
 
 
 func get_obs() -> Dictionary:

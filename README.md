@@ -3,7 +3,8 @@
 Projekt na przedmiot *Sztuczna inteligencja w grach i rozszerzonej rzeczywistości*.
 Autorzy: Filip Opacki, Zofia Jedlińska, Julia Szymczycha.
 
-Dwa boty walczą na arenie 2D z fizyką (pociski z czasem lotu i rykoszetami, bezwładność, przeszkody):
+Dwa boty walczą na arenie 2D z fizyką ciał sztywnych (siły, momenty bezwładności, odrzut, rykoszety, obrażenia z energii
+kinetycznej, przesuwane skrzynie):
 bot rozmyty (własny silnik reguł rozmytych) kontra bot uczony przez RL (PPO).
 Szczegóły: [docs/project-context.md](docs/project-context.md).
 
@@ -80,6 +81,7 @@ Jeden wiersz na mecz; kolejne serie dopisują się do istniejącego pliku (nagł
 | `projectile_speed`, `max_bounces`, `bounce_speed_loss`, `acceleration`, `friction`, `max_speed` | parametry fizyki użyte w meczu |
 
 Gotowe konfiguracje: `default.tres`, `no_ricochet.tres` (pociski znikają na pierwszej ścianie).
+Kolumny `damage_dealt`, `medkits` oraz parametry fizyki (masy, tłumienia, restytucja) opisują model z ciałami sztywnymi.
 
 ## Smoke test Godot RL Agents
 

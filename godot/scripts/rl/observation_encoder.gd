@@ -4,17 +4,18 @@ class_name ObservationEncoder
 ## i pociski są zwykle bliżej niż observation_distance_scale.
 
 const RELATIVE_GAIN: float = 2.0
-## 10 (bot) + 8 (przeciwnik) + 5 * k (pociski) + rays + 3 (amunicja) + 3 (osłona)
-const SELF_SIZE: int = 10
+## 11 (bot) + 8 (przeciwnik) + 5 * k (pociski) + rays + 3 (amunicja) + 3 (apteczka) + 5 * k (skrzynie) + 3 (osłona)
+const SELF_SIZE: int = 11
 const OPPONENT_SIZE: int = 8
 const PROJECTILE_SIZE: int = 5
 const PICKUP_SIZE: int = 3
+const CRATE_SIZE: int = 5
 const COVER_SIZE: int = 3
 
 
 static func size(config: GameConfig) -> int:
 	return SELF_SIZE + OPPONENT_SIZE + PROJECTILE_SIZE * config.nearest_projectiles_k \
-			+ config.vision_rays + PICKUP_SIZE + COVER_SIZE
+			+ config.vision_rays + 2 * PICKUP_SIZE + CRATE_SIZE * config.nearest_crates_k + COVER_SIZE
 
 
 static func encode(obs: Observation, config: GameConfig) -> Array[float]:
@@ -26,7 +27,7 @@ static func encode(obs: Observation, config: GameConfig) -> Array[float]:
 
 	values.append_array([
 		obs.self_position.x, obs.self_position.y, obs.self_velocity.x, obs.self_velocity.y,
-		cos(obs.self_aim_angle), sin(obs.self_aim_angle),
+		cos(obs.self_aim_angle), sin(obs.self_aim_angle), obs.self_angular_velocity,
 		obs.self_hp, obs.self_ammo, obs.shot_cooldown_left, obs.dash_cooldown_left,
 	])
 
@@ -55,6 +56,15 @@ static func encode(obs: Observation, config: GameConfig) -> Array[float]:
 		values.append(obs.ray_distances[i] if i < obs.ray_distances.size() else 0.0)
 
 	values.append_array(_optional_vector(obs.ammo_pickup_available, obs.ammo_pickup_relative_pos))
+	values.append_array(_optional_vector(obs.medkit_available, obs.medkit_relative_pos))
+	for i: int in config.nearest_crates_k:
+		if i < obs.nearest_crates.size():
+			var crate: Dictionary = obs.nearest_crates[i]
+			var crate_pos: Vector2 = crate["pos"]
+			var crate_vel: Vector2 = crate["vel"]
+			values.append_array([1.0, crate_pos.x * RELATIVE_GAIN, crate_pos.y * RELATIVE_GAIN, crate_vel.x, crate_vel.y])
+		else:
+			values.append_array([0.0, 0.0, 0.0, 0.0, 0.0])
 	values.append_array(_optional_vector(obs.cover_available, obs.cover_relative_pos))
 	return values
 

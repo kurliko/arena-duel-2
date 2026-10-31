@@ -70,6 +70,16 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   Test 400 tys. kroków z losowym przeciwnikiem: średnia nagroda w epizodzie z −4,8 do +0,6; w meczach testowych
   bot RL zbiera amunicję, trafia i wygrywa z losowym 4:2; ze skryptowym przegrywa 0:6 (nie trenował jeszcze z nim).
 
+- **Fizyka ciał sztywnych, skrzynie, apteczki, nowa oprawa** (sekcja 4). Uwaga prowadzącego: celowanie z wyprzedzeniem
+  to skutek fizyki (skończonej prędkości pocisku), a nie jej implementacja; wcześniejszy model postaci był kinematyczny
+  (prędkość ustawiana wprost). Przebudowa: postacie, pociski i skrzynie jako `RigidBody2D` sterowane siłami, momentami
+  sił i impulsami; obrażenia z energii kinetycznej; odrzut przy strzale i przekaz pędu przy trafieniu; przesuwane
+  skrzynie jako ruchoma osłona; apteczki (mechanika gry). Boty skryptowy i rozmyty dostały regulator celowania
+  uwzględniający bezwładność obrotu, omijanie przeszkód, leczenie i reguły oparte na energii pocisku przy celu.
+  Obserwacje RL rozszerzone do 64 wartości, nagroda za zadane obrażenia. Powtarzalność potwierdzona (identyczne
+  wyniki dwóch serii z tym samym ziarnem). Wyniki po balansie (10 meczów, seed 21): skryptowy kontra skryptowy 6:4,
+  rozmyty kontra skryptowy 7:3.
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
@@ -209,7 +219,7 @@ w innych tickach niż przeciwnik i na podstawie obserwacji spóźnionej o kilka 
 licznik Sync i udostępnia `step()`, który gra wywołuje między zebraniem obserwacji a wykonaniem akcji.
 Bot RL ma więc tę samą częstotliwość decyzji i to samo opóźnienie (zero) co pozostałe boty: porównanie jest uczciwe.
 
-**Obserwacje** (47 wartości, `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
+**Obserwacje** (47 wartości w pierwszej wersji, 64 po dodaniu fizyki ciał sztywnych: prędkość kątowa, apteczka, 2 najbliższe skrzynie; `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
 własna pozycja, prędkość, kierunek celowania (cos, sin), HP, amunicja, czasy odnowienia; przeciwnik (widoczność,
 pozycja i prędkość względna, HP, kąt do przeciwnika względem celowania); 3 najbliższe widoczne pociski (pozycja
 i prędkość względna); 8 raycastów; najbliższy pakiet amunicji; punkt osłony. Pola niewidocznych obiektów są zerowane
@@ -312,19 +322,67 @@ identyczne wyniki (sprawdzone porównaniem skrótów wyjścia).
 
 ## 4. Fizyka i jej wpływ na rozgrywkę (implementacja w Godocie)
 
-| Element | Implementacja | Wpływ na grę i boty |
-|---|---|---|
-| Bezwładność | `CharacterBody2D`, prędkość zmieniana przez `move_toward` z przyspieszeniem i tarciem | zmiana kierunku trwa, unik trzeba zacząć wcześniej, ruch przeciwnika da się przewidzieć |
-| Unik | impuls prędkości (480 px/s) z czasem odnowienia, potem wytracanie pędu | reakcja na pocisk ma sens tylko z wyprzedzeniem |
-| Czas lotu pocisku | pocisk jako ciało z prędkością 500 px/s, ruch w `_physics_process` | celowanie z wyprzedzeniem, możliwość uniku |
-| Brak „przeskakiwania” ścian | `move_and_collide` rzutuje kształt pocisku na cały odcinek ruchu w ticku (ciągłe wykrywanie kolizji) | stabilne rykoszety przy dużych prędkościach |
-| Rykoszety | `velocity.bounce(normal)` × 0,8, limit odbić, kilka odbić w jednym ticku (rogi) | trafienia zza osłony; po pierwszym odbiciu pocisk może trafić strzelca |
-| Własne pociski | wyjątek kolizji ze strzelcem zdejmowany po pierwszym odbiciu | strzelanie w ścianę z bliska jest ryzykowne |
-| Linia wzroku | raycast na warstwie ścian | przeszkody ograniczają informację botów |
-| Stały krok | 60 Hz; przyspieszenie treningu przez więcej ticków na sekundę, nie przez dłuższy krok | stabilne kolizje i odbicia |
+### 4.1. Model fizyczny: dynamika ciał sztywnych w silniku
 
-Warstwy kolizji: ściany, postacie, pociski, pakiety. Pociski nie zderzają się ze sobą, a postacie przechodzą przez pociski
-(trafienie wykrywa pocisk).
+Pierwsza wersja gry miała postać kinematyczną (`CharacterBody2D`, prędkość ustawiana wzorem „dojdź do v_max
+z przyspieszeniem a”) i rykoszet liczony własnym wzorem. Po uwadze prowadzącego, że celowanie z wyprzedzeniem jest
+skutkiem fizyki, a nie jej implementacją, przeszliśmy na **dynamikę ciał sztywnych**: postacie, pociski i skrzynie to
+`RigidBody2D`, a silnik fizyki Godota całkuje ruch i rozwiązuje zderzenia z uwzględnieniem mas, restytucji i tarcia.
+Gra przykłada wyłącznie **siły, momenty sił i impulsy**; prędkości i tory wynikają z symulacji.
+
+| Zjawisko | Implementacja (silnik + nasze parametry) | Wzór | Wpływ na grę i boty |
+|---|---|---|---|
+| Ruch postaci | siła napędu F w kierunku akcji, tłumienie liniowe c (opór, tarcie o podłoże) | a = F/m, v_max = F/(m·c) = 220 px/s, stała czasowa 1/c = 0,25 s | zmiana kierunku trwa, ruch przeciwnika da się przewidzieć |
+| Celowanie | obrót całej postaci momentem siły τ przy momencie bezwładności I (walec: m·r²/2) i tłumieniu kątowym | ε = τ/I, ω_max = τ/(I·c_k) ≈ 4,2 rad/s | broń rozpędza się i ma pęd kątowy: trzeba hamować przed celem, inaczej przestrzeli |
+| Unik | impuls J | Δv = J/m = 480 px/s | reakcja na pocisk tylko z wyprzedzeniem |
+| Odrzut przy strzale | impuls −m_p·v₀ dla strzelca (III zasada dynamiki) | Δv = m_p·v₀/m = 40 px/s | seria strzałów spycha strzelca, strzał w biegu zmienia jego tor |
+| Lot pocisku | ciało o masie m_p z tłumieniem liniowym c_p | v(t) = v₀e^(−c_p t), x(t) = v₀/c_p·(1 − e^(−c_p t)) | pocisk zwalnia z odległością; czas lotu rośnie szybciej niż liniowo |
+| Ciągłe wykrywanie kolizji | `continuous_cd = CCD_MODE_CAST_SHAPE` | – | szybki pocisk nie przeskakuje ścian |
+| Rykoszet | restytucja materiału pocisku e = 0,8, limit odbić | v' = e·v | trafienia zza osłony; po pierwszym odbiciu pocisk może trafić strzelca |
+| Obrażenia | proporcjonalne do energii kinetycznej pocisku tuż przed zderzeniem | D = D₀·(v/v₀)² = D₀·E/E₀ | rykoszet (×0,64 energii) i duża odległość osłabiają strzał |
+| Trafienie | zderzenie pocisku z postacią rozwiązuje silnik (zachowanie pędu z restytucją) | Δv ≈ (1+e)·m_p·v/m | trafiony zostaje zepchnięty, traci tor i celowanie |
+| Zderzenia postaci | silnik, masy i restytucja postaci | – | wbiegnięcie w przeciwnika go odpycha |
+| Skrzynie | ciała o masie 15, tłumieniu (tarcie o podłoże) i momencie bezwładności m·a²/6 | – | ruchoma osłona: można ją pchać (wolno, bo duża masa), trafienie przekazuje jej pęd, a trafienie poza środkiem ją obraca |
+| Linia wzroku | raycast na warstwach przeszkód i skrzyń | – | przesunięta skrzynia odsłania albo zasłania pole widzenia |
+| Stały krok | 60 Hz; przyspieszenie treningu przez więcej ticków na sekundę, nie przez dłuższy krok | – | stabilne kolizje i odbicia |
+
+Szczegóły implementacyjne: tarcie postaci = 0, więc kontakt ze ścianą nie obraca postaci i obrót pochodzi wyłącznie
+z momentu siły. Ściany mają restytucję 0, więc odbicie pocisku zależy tylko od restytucji pocisku. Stan ciała przy
+starcie meczu ustawiamy w `_integrate_forces`, żeby silnik nie nadpisał pozycji. Fizyka ciał sztywnych w Godocie jest
+deterministyczna przy stałym kroku i tej samej kolejności: dwie serie meczów z tym samym ziarnem dają identyczne wyniki.
+
+Warstwy kolizji: ściany, postacie, pociski, pakiety, skrzynie. Pociski nie zderzają się ze sobą.
+
+### 4.2. Jak fizyka trafia do botów
+
+- **Regulator celowania z przewidywaniem (boty skryptowy i rozmyty, `Steering.turn_toward`).** Bez momentu siły
+  obracające się ciało przebędzie jeszcze kąt ω/c_k, więc z celem porównujemy kąt, przy którym broń sama by się
+  zatrzymała. Gdy broń obraca się szybko w stronę celu, przewidywany kąt go przekracza i regulator wybiera moment
+  hamujący. To sterowanie wynikające wprost z dynamiki obrotu.
+- **Celowanie z wyprzedzeniem z oporem.** Czas lotu liczony z modelu z tłumieniem: t = −ln(1 − c_p·d/v₀)/c_p, a nie d/v₀.
+- **Energia przy celu.** Prędkość pocisku po przebyciu drogi d to v = v₀ − c_p·d, więc przewidywane obrażenia to
+  D₀·(v/v₀)². Boty nie strzelają, gdy przewidywane obrażenia są mniejsze niż 6 HP. Bot rozmyty ma wejście
+  `impact_energy` i reguły: `IF visible IS yes AND impact_energy IS low THEN attack IS low` oraz
+  `IF visible IS yes AND impact_energy IS high AND ammo IS NOT none THEN attack IS high`.
+- **Bot RL** dostaje w obserwacji własną prędkość liniową i kątową, prędkości pocisków i skrzyń, więc dynamikę
+  (hamowanie obrotu, odrzut, pchnięcia) musi opanować sam.
+
+### 4.3. Omijanie przeszkód
+
+Po przejściu na ciała sztywne pierwsza seria testowa ujawniła zakleszczenie: oba boty szły do ostatniej znanej
+pozycji przeciwnika prosto w przeszkodę i stały tak do końca meczu (prędkość 0 od 7. sekundy). Boty nie mają
+wyszukiwania ścieżki, więc do wspólnych zachowań dodaliśmy omijanie: gdy raycast w kierunku ruchu jest krótszy
+niż ok. 50 px, bot wybiera najbliższy wolny kierunek, który nadal prowadzi do celu (odchylenie o 45° albo 90°),
+a szukanie porzuca ostatnią znaną pozycję, jeśli droga do niej jest zablokowana.
+
+### 4.4. Apteczki i balans
+
+Apteczki to mechanika gry, nie fizyka: leczą o 25 HP i odnawiają się po 20 s, leżą w bardziej odsłoniętych miejscach
+niż amunicja. Bot skryptowy ma stan LECZENIE (HP ≤ 40%), bot rozmyty wyjście `heal` i reguły, np.
+`IF hp IS low AND medkit_distance IS near THEN heal IS high`. Balans: przy obrażeniach 20 HP przy prędkości wylotowej
+żaden z 20 meczów testowych nie zakończył się zabiciem przeciwnika (średnie trafienie po spadku energii to ok. 15 HP,
+a apteczki leczą). Po zmianie na 35 HP i osłabieniu apteczek część meczów kończy się zabiciem, a w pozostałych
+różnice HP są wyraźne.
 
 ## 5. Integracja RL (Godot RL Agents)
 
@@ -348,7 +406,7 @@ Problemy napotkane w smoke teście i rozwiązania:
 
 | Gotowe (opisujemy, nie przypisujemy sobie) | Własne |
 |---|---|
-| Godot 4.7.2: silnik, fizyka 2D, raycasty, edytor | model gry: arena, postać, bezwładność, unik, pociski z rykoszetami, amunicja |
+| Godot 4.7.2: silnik, fizyka 2D, raycasty, edytor | model gry i fizyki: dobór sił, mas, momentów bezwładności, tłumień i restytucji; obrażenia z energii kinetycznej; odrzut; skrzynie; amunicja i apteczki |
 | Godot RL Agents: węzły `Sync`, `AIController2D`, inferencja ONNX | architektura ciało/mózg, kontrakty `Brain`/`Observation`/`Action`, percepcja z linią wzroku |
 | Stable-Baselines3: algorytm PPO | `ScriptedBrain` (FSM, celowanie z wyprzedzeniem, unik), moduł `Steering` |
 | PyTorch, ONNX, OnnxRuntime | tryb wsadowy, statystyki meczów, powtarzalność przez ziarna |

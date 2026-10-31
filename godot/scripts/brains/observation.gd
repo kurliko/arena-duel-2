@@ -6,8 +6,11 @@ extends RefCounted
 
 ## Pozycja względem lewego górnego rogu areny.
 var self_position: Vector2 = Vector2.ZERO
+## Prędkość liniowa w jednostkach prędkości granicznej (GameConfig.max_speed()).
 var self_velocity: Vector2 = Vector2.ZERO
 var self_aim_angle: float = 0.0
+## Prędkość kątowa celowania w jednostkach granicznej prędkości kątowej (GameConfig.max_angular_speed()).
+var self_angular_velocity: float = 0.0
 var self_hp: float = 1.0
 var self_ammo: float = 0.0
 var shot_cooldown_left: float = 0.0
@@ -20,11 +23,15 @@ var opponent_hp: float = 0.0
 
 ## Każdy element: {"pos": Vector2, "vel": Vector2} względem bota, k najbliższych.
 var nearest_projectiles: Array[Dictionary] = []
-## Odległości raycastów do ścian i przeszkód (znormalizowane 0..1).
+## Odległości raycastów do ścian, przeszkód i skrzyń (znormalizowane 0..1).
 ## Promień i ma kierunek ruchu Action i+1 (0 = w prawo, dalej co 45 stopni zgodnie z zegarem).
 var ray_distances: PackedFloat32Array = PackedFloat32Array()
 var ammo_pickup_relative_pos: Vector2 = Vector2.ZERO
 var ammo_pickup_available: bool = false
+var medkit_relative_pos: Vector2 = Vector2.ZERO
+var medkit_available: bool = false
+## Każdy element: {"pos": Vector2, "vel": Vector2} względem bota, k najbliższych skrzyń.
+var nearest_crates: Array[Dictionary] = []
 ## Najbliższy punkt za przeszkodą, którego widoczny przeciwnik nie widzi (dostępny tylko, gdy przeciwnik jest widoczny).
 var cover_relative_pos: Vector2 = Vector2.ZERO
 var cover_available: bool = false

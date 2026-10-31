@@ -34,6 +34,7 @@ enabled=PackedStringArray("res://addons/godot_rl_agents/plugin.cfg")
 2d_physics/layer_2="fighters"
 2d_physics/layer_3="projectiles"
 2d_physics/layer_4="pickups"
+2d_physics/layer_5="crates"
 
 [physics]
 

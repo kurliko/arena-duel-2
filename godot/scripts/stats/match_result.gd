@@ -28,9 +28,10 @@ var stats_b: FighterStats
 
 func summary() -> String:
 	return ("mecz %d: %s (A) vs %s (B) -> %s [%s, %.1f s] HP %.0f/%.0f, trafienia %d/%d, strzały %d/%d, "
-			+ "rykoszety %d/%d, samotrafienia %d/%d, uniki %d/%d, pakiety %d/%d") % [
+			+ "rykoszety %d/%d, samotrafienia %d/%d, uniki %d/%d, pakiety %d/%d, apteczki %d/%d, obrażenia %.0f/%.0f") % [
 		match_index, brain_a, brain_b, winner, reason, duration, hp_a, hp_b,
 		stats_a.hits, stats_b.hits, stats_a.shots, stats_b.shots,
 		stats_a.ricochet_hits, stats_b.ricochet_hits, stats_a.self_hits, stats_b.self_hits,
-		stats_a.dashes, stats_b.dashes, stats_a.pickups, stats_b.pickups,
+		stats_a.dashes, stats_b.dashes, stats_a.pickups, stats_b.pickups, stats_a.medkits, stats_b.medkits,
+		stats_a.damage_dealt, stats_b.damage_dealt,
 	]

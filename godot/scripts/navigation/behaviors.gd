@@ -9,6 +9,8 @@ const PREFERRED_DISTANCE: float = 350.0
 const DISTANCE_TOLERANCE: float = 0.2
 ## Strzał, gdy błąd celowania jest mniejszy niż ten kąt (stopnie).
 const SHOOT_ANGLE_DEG: float = 4.0
+## Nie strzelaj, jeśli pocisk doleci z energią dającą mniej obrażeń.
+const MIN_EXPECTED_DAMAGE: float = 6.0
 ## Zryw, gdy pocisk minie bota w odległości mniejszej niż ten mnożnik promienia w ciągu DODGE_HORIZON sekund.
 const DODGE_RADIUS_FACTOR: float = 2.5
 const DODGE_HORIZON: float = 0.5
@@ -26,6 +28,10 @@ const WANDER_MIN_FREE_RAY: float = 0.3
 const WANDER_SWITCH_DECISIONS: int = 25
 ## Punkt osłony uznany za osiągnięty w tej odległości (px).
 const COVER_REACHED: float = 12.0
+## Kierunek ruchu uznany za zablokowany, gdy raycast jest krótszy (ułamek ray_length).
+const BLOCKED_RAY: float = 0.08
+## Przesunięcia kierunku (w krokach 45 stopni) sprawdzane przy omijaniu przeszkody.
+const DETOUR_OFFSETS: Array[int] = [1, -1, 2, -2]
 
 var decisions: int = 0
 var _config: GameConfig
@@ -70,24 +76,58 @@ func attack(obs: Observation, action: Action) -> void:
 	var to_opponent: Vector2 = obs.opponent_relative_pos * _config.observation_distance_scale
 	var distance: float = to_opponent.length()
 	if distance > PREFERRED_DISTANCE * (1.0 + DISTANCE_TOLERANCE):
-		action.move = Steering.move_toward(to_opponent)
+		action.move = _move_around(obs, to_opponent)
 	elif distance < PREFERRED_DISTANCE * (1.0 - DISTANCE_TOLERANCE):
-		action.move = Steering.move_toward(-to_opponent)
+		action.move = _move_around(obs, -to_opponent)
 	else:
 		if decisions % STRAFE_SWITCH_DECISIONS == 0:
 			_strafe_sign = -_strafe_sign
 		action.move = _strafe_move(obs, to_opponent)
 
 
-## Celowanie z wyprzedzeniem: pozycja przeciwnika po czasie lotu pocisku. Strzał, gdy błąd jest mały.
+## Celowanie z wyprzedzeniem: pozycja przeciwnika po czasie lotu pocisku, który zwalnia z powodu oporu
+## (GameConfig.projectile_flight_time). Strzał, gdy błąd celowania jest mały, a pocisk doleci z energią
+## dającą co najmniej MIN_EXPECTED_DAMAGE obrażeń.
 func _aim_and_shoot(obs: Observation, action: Action) -> void:
 	var to_opponent: Vector2 = obs.opponent_relative_pos * _config.observation_distance_scale
-	var opponent_velocity: Vector2 = obs.opponent_velocity * _config.max_speed
-	var flight_time: float = to_opponent.length() / _config.projectile_speed
-	var aim_point: Vector2 = to_opponent + opponent_velocity * flight_time
-	action.turn = Steering.turn_toward(obs.self_aim_angle, aim_point.angle(), _config)
+	var opponent_velocity: Vector2 = obs.opponent_velocity * _config.max_speed()
+	var distance: float = to_opponent.length()
+	var flight_time: float = _config.projectile_flight_time(distance)
+	var aim_point: Vector2 = to_opponent + opponent_velocity * (flight_time if is_finite(flight_time) else 0.0)
+	action.turn = _turn(obs, aim_point.angle())
 	var aim_error: float = absf(angle_difference(obs.self_aim_angle, aim_point.angle()))
-	action.shoot = obs.self_ammo > 0.0 and aim_error < deg_to_rad(SHOOT_ANGLE_DEG)
+	# Prędkość pocisku przy celu: v = v0 - c * x (z v(t) = v0 e^(-ct) i x(t) = v0/c (1 - e^(-ct))).
+	var impact_speed: float = _config.projectile_speed - _config.projectile_linear_damp * distance
+	var expected_damage: float = _config.damage_for_speed(maxf(impact_speed, 0.0))
+	action.shoot = obs.self_ammo > 0.0 and aim_error < deg_to_rad(SHOOT_ANGLE_DEG) \
+			and expected_damage >= MIN_EXPECTED_DAMAGE
+
+
+## Obrót w stronę kąta z uwzględnieniem bezwładności obrotu (Steering.turn_toward).
+func _turn(obs: Observation, target_angle: float) -> int:
+	return Steering.turn_toward(obs.self_aim_angle, obs.self_angular_velocity, target_angle, _config)
+
+
+## Ruch w stronę `direction` z omijaniem przeszkód (boty nie mają wyszukiwania ścieżki): gdy kierunek
+## jest zablokowany, wybierany jest najbliższy wolny kierunek, który nadal prowadzi w stronę celu
+## (odchylenie o 45 albo 90 stopni). Bez tego bot idący do celu za przeszkodą pchałby się w nią bez końca.
+func _move_around(obs: Observation, direction: Vector2) -> int:
+	var move_index: int = Steering.move_toward(direction)
+	if move_index == Action.MOVE_STOP or not _blocked(obs, move_index):
+		return move_index
+	var best: int = move_index
+	var best_free: float = -1.0
+	for offset: int in DETOUR_OFFSETS:
+		var candidate: int = posmod(move_index - 1 + offset, 8) + 1
+		var free: float = obs.ray_distances[candidate - 1]
+		if free >= BLOCKED_RAY and free > best_free:
+			best_free = free
+			best = candidate
+	return best
+
+
+func _blocked(obs: Observation, move_index: int) -> bool:
+	return move_index != Action.MOVE_STOP and obs.ray_distances[move_index - 1] < BLOCKED_RAY
 
 
 ## Ruch prostopadły do kierunku `axis` (krążenie); zmienia stronę przy ścianie.
@@ -105,18 +145,32 @@ func seek_ammo(obs: Observation, action: Action) -> void:
 		search(obs, action)
 		return
 	var to_pickup: Vector2 = obs.ammo_pickup_relative_pos * _config.observation_distance_scale
-	action.move = Steering.move_toward(to_pickup)
+	action.move = _move_around(obs, to_pickup)
 	if obs.opponent_visible and obs.self_ammo > 0.0:
 		_aim_and_shoot(obs, action)
 	else:
-		action.turn = Steering.turn_toward(obs.self_aim_angle, to_pickup.angle(), _config)
+		action.turn = _turn(obs, to_pickup.angle())
+
+
+## Leczenie: do najbliższej dostępnej apteczki, strzelając po drodze, jeśli przeciwnik jest widoczny.
+func seek_medkit(obs: Observation, action: Action) -> void:
+	if not obs.medkit_available:
+		take_cover(obs, action)
+		return
+	var to_medkit: Vector2 = obs.medkit_relative_pos * _config.observation_distance_scale
+	action.move = _move_around(obs, to_medkit)
+	if obs.opponent_visible and obs.self_ammo > 0.0:
+		_aim_and_shoot(obs, action)
+	else:
+		action.turn = _turn(obs, to_medkit.angle())
 
 
 ## Szukanie: do ostatniej znanej pozycji przeciwnika, a bez niej w losowym kierunku z wolną przestrzenią.
 func search(obs: Observation, action: Action) -> void:
 	var my_pos: Vector2 = _my_pos(obs)
 	var direction: Vector2
-	if _has_last_seen and my_pos.distance_to(_last_seen) > LAST_SEEN_REACHED:
+	if _has_last_seen and my_pos.distance_to(_last_seen) > LAST_SEEN_REACHED \
+			and not _blocked(obs, Steering.move_toward(_last_seen - my_pos)):
 		direction = _last_seen - my_pos
 	else:
 		_has_last_seen = false
@@ -126,8 +180,8 @@ func search(obs: Observation, action: Action) -> void:
 		if _wander_ray < 0 or rays[_wander_ray] < MIN_FREE_RAY or decisions % WANDER_SWITCH_DECISIONS == 0:
 			_wander_ray = _pick_wander_ray(rays)
 		direction = Vector2.RIGHT.rotated(TAU * _wander_ray / rays.size())
-	action.move = Steering.move_toward(direction)
-	action.turn = Steering.turn_toward(obs.self_aim_angle, direction.angle(), _config)
+	action.move = _move_around(obs, direction)
+	action.turn = _turn(obs, direction.angle())
 
 
 func _pick_wander_ray(rays: PackedFloat32Array) -> int:
@@ -149,11 +203,11 @@ func take_cover(obs: Observation, action: Action) -> void:
 	if obs.opponent_visible:
 		_aim_and_shoot(obs, action)
 	elif _has_last_seen:
-		action.turn = Steering.turn_toward(obs.self_aim_angle, (_last_seen - _my_pos(obs)).angle(), _config)
+		action.turn = _turn(obs, (_last_seen - _my_pos(obs)).angle())
 	if obs.cover_available:
 		var to_cover: Vector2 = obs.cover_relative_pos * _config.observation_distance_scale
 		if to_cover.length() > COVER_REACHED:
-			action.move = Steering.move_toward(to_cover)
+			action.move = _move_around(obs, to_cover)
 
 
 ## Unik: zryw przed nadlatującym pociskiem, a bez zrywu (czas odnowienia) krok w bok

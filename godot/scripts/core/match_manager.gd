@@ -20,6 +20,7 @@ const TIME_EPSILON: float = 1e-4
 @export var fighters_root: Node2D
 @export var projectiles_root: Node2D
 @export var pickups_root: Node2D
+@export var crates_root: Node2D
 @export var brain_a_name: String = BrainFactory.SCRIPTED
 @export var brain_b_name: String = BrainFactory.RANDOM
 ## Liczba meczów do rozegrania, potem wyjście z gry (0 = bez końca).
@@ -44,7 +45,8 @@ var fighter_a: Fighter
 var fighter_b: Fighter
 var brain_a: Brain
 var brain_b: Brain
-var pickups: Array[AmmoPickup] = []
+var pickups: Array[Pickup] = []
+var crates: Array[Crate] = []
 
 var match_index: int = 0
 var elapsed: float = 0.0
@@ -82,10 +84,14 @@ func _ready() -> void:
 	if (controller_a != null or controller_b != null) and not external_clock:
 		_create_inference_sync()
 	for point: Vector2 in arena.layout.pickup_points:
-		var pickup := AmmoPickup.new()
-		pickup.setup(config, point)
-		pickups_root.add_child(pickup)
-		pickups.append(pickup)
+		_add_pickup(Pickup.Kind.AMMO, point)
+	for point: Vector2 in arena.layout.medkit_points:
+		_add_pickup(Pickup.Kind.MEDKIT, point)
+	for point: Vector2 in arena.layout.crate_points:
+		var crate := Crate.new()
+		crate.setup(config)
+		crates_root.add_child(crate)
+		crates.append(crate)
 	start_match()
 
 
@@ -116,6 +122,13 @@ func _create_fighter(color: Color, label: String) -> Fighter:
 	fighter.died.connect(_on_fighter_died)
 	fighters_root.add_child(fighter)
 	return fighter
+
+
+func _add_pickup(kind: Pickup.Kind, at: Vector2) -> void:
+	var pickup := Pickup.new()
+	pickup.setup(config, kind, at)
+	pickups_root.add_child(pickup)
+	pickups.append(pickup)
 
 
 func _create_rl_controller(fighter: Fighter) -> RLController:
@@ -152,8 +165,10 @@ func start_match() -> void:
 	seed(match_seed)
 	for projectile: Node in projectiles_root.get_children():
 		projectile.queue_free()
-	for pickup: AmmoPickup in pickups:
+	for pickup: Pickup in pickups:
 		pickup.reset()
+	for i: int in crates.size():
+		crates[i].reset_at(arena.layout.crate_points[i])
 	# Zmiana stron co mecz, żeby układ areny nie faworyzował żadnego mózgu.
 	var swap: bool = match_index % 2 == 1
 	_sides_swapped = swap
@@ -199,8 +214,8 @@ func collect_observations() -> void:
 	if not running:
 		return
 	var projectiles: Array[Projectile] = active_projectiles()
-	_obs_a = Perception.build(fighter_a, fighter_b, arena, projectiles, pickups, config)
-	_obs_b = Perception.build(fighter_b, fighter_a, arena, projectiles, pickups, config)
+	_obs_a = Perception.build(fighter_a, fighter_b, arena, projectiles, pickups, crates, config)
+	_obs_b = Perception.build(fighter_b, fighter_a, arena, projectiles, pickups, crates, config)
 	brain_a.observe(_obs_a)
 	brain_b.observe(_obs_b)
 
@@ -226,6 +241,8 @@ func _on_shot_fired(shooter: Fighter, direction: Vector2) -> void:
 	var projectile := Projectile.new()
 	projectile.setup(config, shooter, direction)
 	projectiles_root.add_child(projectile)
+	Effects.spawn_muzzle_flash(projectiles_root, shooter.position + direction * (config.fighter_radius + 10.0),
+			direction, shooter.color)
 
 
 func _on_fighter_died(_fighter: Fighter) -> void:
