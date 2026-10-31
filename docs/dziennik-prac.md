@@ -76,9 +76,17 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   sił i impulsami; obrażenia z energii kinetycznej; odrzut przy strzale i przekaz pędu przy trafieniu; przesuwane
   skrzynie jako ruchoma osłona; apteczki (mechanika gry). Boty skryptowy i rozmyty dostały regulator celowania
   uwzględniający bezwładność obrotu, omijanie przeszkód, leczenie i reguły oparte na energii pocisku przy celu.
-  Obserwacje RL rozszerzone do 64 wartości, nagroda za zadane obrażenia. Powtarzalność potwierdzona (identyczne
+  Obserwacje RL rozszerzone do 61 wartości, nagroda za zadane obrażenia. Powtarzalność potwierdzona (identyczne
   wyniki dwóch serii z tym samym ziarnem). Wyniki po balansie (10 meczów, seed 21): skryptowy kontra skryptowy 6:4,
   rozmyty kontra skryptowy 7:3.
+
+- **Błąd w scenie treningowej po przejściu na ciała sztywne** (sekcja 4.1): pierwszy trening na nowej fizyce
+  (`rigid_v1`, 2,5 mln kroków) nie dał żadnej poprawy. Mecze treningowe kończyły się po 1–2 s śmiercią bota
+  bez trafień przeciwnika. Przyczyna: stan ciała przy starcie meczu ustawiany w `_integrate_forces` jest
+  w układzie globalnym, a podawaliśmy współrzędne areny; w scenie treningowej areny są przesunięte, więc boty
+  ze wszystkich 8 aren trafiały na arenę nr 0 i strzelały do siebie nawzajem. Poprawka: złożenie pozycji
+  startowej z transformacją rodzica. Przy okazji poprawiony odczyt `is_success` (flaga wygranej kasowana przed
+  odczytem przez Pythona, przez co odsetek zwycięstw w logach był zawsze 0). Trening uruchomiony ponownie.
 
 ---
 
@@ -219,7 +227,7 @@ w innych tickach niż przeciwnik i na podstawie obserwacji spóźnionej o kilka 
 licznik Sync i udostępnia `step()`, który gra wywołuje między zebraniem obserwacji a wykonaniem akcji.
 Bot RL ma więc tę samą częstotliwość decyzji i to samo opóźnienie (zero) co pozostałe boty: porównanie jest uczciwe.
 
-**Obserwacje** (47 wartości w pierwszej wersji, 64 po dodaniu fizyki ciał sztywnych: prędkość kątowa, apteczka, 2 najbliższe skrzynie; `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
+**Obserwacje** (47 wartości w pierwszej wersji, 61 po dodaniu fizyki ciał sztywnych: prędkość kątowa, apteczka, 2 najbliższe skrzynie; `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
 własna pozycja, prędkość, kierunek celowania (cos, sin), HP, amunicja, czasy odnowienia; przeciwnik (widoczność,
 pozycja i prędkość względna, HP, kąt do przeciwnika względem celowania); 3 najbliższe widoczne pociski (pozycja
 i prędkość względna); 8 raycastów; najbliższy pakiet amunicji; punkt osłony. Pola niewidocznych obiektów są zerowane
@@ -348,7 +356,9 @@ Gra przykłada wyłącznie **siły, momenty sił i impulsy**; prędkości i tory
 
 Szczegóły implementacyjne: tarcie postaci = 0, więc kontakt ze ścianą nie obraca postaci i obrót pochodzi wyłącznie
 z momentu siły. Ściany mają restytucję 0, więc odbicie pocisku zależy tylko od restytucji pocisku. Stan ciała przy
-starcie meczu ustawiamy w `_integrate_forces`, żeby silnik nie nadpisał pozycji. Fizyka ciał sztywnych w Godocie jest
+starcie meczu ustawiamy w `_integrate_forces`, żeby silnik nie nadpisał pozycji; transformacja jest tam
+globalna, więc pozycję startową w układzie areny składamy z transformacją rodzica (inaczej w scenie treningowej,
+gdzie areny są przesunięte, wszystkie boty trafiały na jedną arenę). Fizyka ciał sztywnych w Godocie jest
 deterministyczna przy stałym kroku i tej samej kolejności: dwie serie meczów z tym samym ziarnem dają identyczne wyniki.
 
 Warstwy kolizji: ściany, postacie, pociski, pakiety, skrzynie. Pociski nie zderzają się ze sobą.

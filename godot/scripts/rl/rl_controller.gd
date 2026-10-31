@@ -48,7 +48,8 @@ func begin_episode() -> void:
 	_snapshot()
 	last_obs = null
 	episode_reward = 0.0
-	_won = false
+	# _won zostaje do następnego końca epizodu: nowy mecz startuje w tym samym ticku co koniec poprzedniego,
+	# a Python odczytuje is_success dopiero przy kolejnej decyzji (razem z flagą końca epizodu).
 	current_action = Action.idle()
 
 

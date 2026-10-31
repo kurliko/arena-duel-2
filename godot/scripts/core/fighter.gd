@@ -66,10 +66,12 @@ func setup(cfg: GameConfig, fighter_color: Color, fighter_label: String) -> void
 	add_child(collision)
 
 
-## Ustawienie na pozycji startowej. Stan ciała sztywnego zmieniamy w _integrate_forces, a nie przez
-## bezpośrednie przypisanie, żeby silnik fizyki nie nadpisał pozycji i prędkości.
+## Ustawienie na pozycji startowej (współrzędne areny). Stan ciała sztywnego zmieniamy w _integrate_forces,
+## a nie przez bezpośrednie przypisanie, żeby silnik fizyki nie nadpisał pozycji i prędkości.
 func reset_at(spawn_position: Vector2, facing_angle: float) -> void:
-	_reset_transform = Transform2D(facing_angle, spawn_position)
+	# state.transform w _integrate_forces jest globalna, a pozycja startowa lokalna (współrzędne areny);
+	# w scenie treningowej areny są przesunięte, więc trzeba złożyć ją z transformacją rodzica.
+	_reset_transform = (get_parent() as Node2D).global_transform * Transform2D(facing_angle, spawn_position)
 	_pending_reset = true
 	position = spawn_position
 	rotation = facing_angle

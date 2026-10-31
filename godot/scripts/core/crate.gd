@@ -40,7 +40,8 @@ func setup(cfg: GameConfig) -> void:
 
 
 func reset_at(at: Vector2) -> void:
-	_reset_transform = Transform2D(0.0, at)
+	# Transformacja globalna (jak w Fighter.reset_at): areny w scenie treningowej są przesunięte.
+	_reset_transform = (get_parent() as Node2D).global_transform * Transform2D(0.0, at)
 	_pending_reset = true
 	position = at
 	rotation = 0.0
