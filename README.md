@@ -118,6 +118,36 @@ Testy jednostkowe silnika:
 Godot_v4.7.2-stable_mono_win64_console.exe --headless --path godot --script res://tests/test_fuzzy.gd
 ```
 
+## Bot RL
+
+Bot uczony przez PPO (Stable-Baselines3) przez Godot RL Agents. Kod po stronie gry w `godot/scripts/rl/`,
+trening w `training/train_rl.py`.
+
+**Trening z curriculum** (każdy etap uruchamia grę w trybie `--headless` z innym przeciwnikiem):
+```
+.\venv\Scripts\python training\train_rl.py --curriculum random:400000,scripted:600000,fuzzy:600000 --arenas 8 --run nazwa_przebiegu
+```
+- `--arenas`: liczba równoległych aren w jednej instancji gry, `--speedup`: przyspieszenie symulacji (domyślnie 8),
+  `--resume model.zip`: kontynuacja treningu.
+- Wyniki w `training/runs/<nazwa>/`: modele `.zip` i `.onnx` po każdym etapie, checkpointy, logi gry, TensorBoard.
+- Końcowy model trafia do `godot/models/rl_brain.onnx`.
+
+**Podgląd przebiegu treningu** (średnia nagroda, długość epizodu, odsetek zwycięstw `rollout/success_rate`):
+```
+.\venv\Scripts\tensorboard --logdir training\runs
+```
+i otwórz w przeglądarce http://localhost:6006.
+
+**Mecz z wytrenowanym botem** (model ONNX w grze, bez Pythona): w `MatchManager` ustaw `Brain A Name` = `rl`
+albo z konsoli:
+```
+Godot_v4.7.2-stable_mono_win64_console.exe --headless --fixed-fps 60 --path godot -- --matches=20 --brain-a=rl --brain-b=fuzzy --csv=results/rl_vs_fuzzy.csv
+```
+Opcje: `--rl-model=res://models/....onnx`, `--rl-deterministic=1` (zawsze najbardziej prawdopodobna akcja).
+
+**Podgląd treningu w edytorze:** scena `res://scenes/training.tscn` pokazuje wszystkie areny naraz. Uruchom najpierw
+skrypt treningowy z `--arenas` zgodnym ze sceną (domyślnie 8), potem F6 w edytorze. Bez Pythona boty RL stoją.
+
 ## Struktura
 
 Patrz sekcja 11 w [docs/project-context.md](docs/project-context.md).

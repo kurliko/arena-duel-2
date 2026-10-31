@@ -53,6 +53,19 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
 - Wyniki (20 meczów, seed 1): rozmyty kontra losowy 20:0; rozmyty kontra skryptowy: wersja 1 reguł 3:12
   (5 remisów), po strojeniu 8:10 (2 remisy).
 
+- **Środowisko RL i trening bota RL**:
+  - `RLController` (rozszerzenie `AIController2D` z Godot RL Agents), `RLBrain`, koder obserwacji (47 wartości),
+    funkcja nagrody z wagami w zasobie `RewardConfig`,
+  - `ArenaSync`: węzeł Sync pluginu wywoływany w tickach decyzji gry (bot RL decyduje razem z pozostałymi mózgami),
+  - scena treningowa z wieloma arenami w jednej instancji gry, skrypt `training/train_rl.py` z curriculum
+    (losowy → skryptowy → rozmyty), logami TensorBoard, checkpointami i eksportem ONNX po każdym etapie,
+  - inferencja ONNX w meczu: mózg `rl` dostępny w grze i w trybie wsadowym bez Pythona,
+  - wydajność: 8 aren, przyspieszenie 8×, około 860 kroków decyzji na sekundę (1,6 mln kroków w około 35 min).
+
+- **Pierwszy trening RL** (`curriculum_v1`: losowy 400 tys., skryptowy 600 tys., rozmyty 600 tys. kroków, 8 aren,
+  około 35 min): średnia nagroda w etapie z losowym wzrosła z −3,3 do −2,4, ale odsetek zwycięstw był 0 we wszystkich
+  etapach. Analiza nieudanej wersji nagród opisana w sekcji 3.7.
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
@@ -177,14 +190,87 @@ i `IF threat IS high THEN collect IS low` sprawia, że środek ciężkości atak
 „wysoko” i „nisko”) i wygrywa unik. Wynik po zmianie: 8:10 (2 remisy). To pokazuje zaletę bazy reguł
 w pliku: zmianę zachowania uzyskaliśmy bez zmian w kodzie.
 
-### 3.7. Zbieranie danych do eksperymentów
+### 3.7. Bot RL: środowisko uczenia w Godocie
+
+**Przepływ danych w jednej decyzji** (co 4 ticki fizyki, wspólnie dla obu botów):
+1. `MatchManager.collect_observations()`: `Perception` buduje `Observation` dla obu botów; `RLBrain.observe()`
+   przekazuje ją do `RLController` i dolicza nagrodę za zdarzenia od poprzedniej decyzji.
+2. `ArenaSync.step()`: węzeł Sync z Godot RL Agents odczytuje obserwacje (`get_obs`), nagrody i flagi końca epizodu,
+   wysyła je do Pythona (trening) albo podaje modelowi ONNX (gra) i ustawia otrzymane akcje (`set_action`).
+3. `MatchManager.apply_decisions()`: wszystkie mózgi zwracają akcje, a `RLBrain` zwraca akcję ustawioną w kroku 2.
+
+**Dlaczego własna nakładka na Sync.** Oryginalny węzeł Sync wymienia dane z Pythonem co `action_repeat` ticków
+liczonych od startu sceny, niezależnie od tego, kiedy decydują pozostałe mózgi. Bot RL decydowałby wtedy
+w innych tickach niż przeciwnik i na podstawie obserwacji spóźnionej o kilka ticków. `ArenaSync` wyłącza własny
+licznik Sync i udostępnia `step()`, który gra wywołuje między zebraniem obserwacji a wykonaniem akcji.
+Bot RL ma więc tę samą częstotliwość decyzji i to samo opóźnienie (zero) co pozostałe boty: porównanie jest uczciwe.
+
+**Obserwacje** (47 wartości, `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
+własna pozycja, prędkość, kierunek celowania (cos, sin), HP, amunicja, czasy odnowienia; przeciwnik (widoczność,
+pozycja i prędkość względna, HP, kąt do przeciwnika względem celowania); 3 najbliższe widoczne pociski (pozycja
+i prędkość względna); 8 raycastów; najbliższy pakiet amunicji; punkt osłony. Pola niewidocznych obiektów są zerowane
+z flagą obecności, więc bot RL nie dostaje więcej informacji niż bot rozmyty.
+
+**Akcje**: ta sama dyskretna przestrzeń co u innych botów (MultiDiscrete: ruch 9, obrót 5, strzał 2, unik 2).
+
+**Nagroda** (`RewardConfig`, wartości startowe):
+
+| Zdarzenie | Waga |
+|---|---|
+| trafienie przeciwnika | +1,0 |
+| utrata HP | −0,05 za punkt (−1 za trafienie) |
+| trafienie samego siebie | −0,5 (dodatkowo do utraty HP) |
+| oddany strzał | −0,03 |
+| podniesienie amunicji | +0,2 |
+| każda decyzja (upływ czasu) | −0,002 |
+| broń skierowana na widocznego przeciwnika (błąd < 10°) | +0,002 za decyzję |
+| wygrana / przegrana / remis | +5 / −5 / −1 |
+
+Nagroda jest liczona z przyrostów statystyk bota (`FighterStats`) między decyzjami, więc korzysta z tych samych
+liczników, które trafiają do CSV. Kara za remis i upływ czasu ma zniechęcać do czekania do końca meczu.
+
+**Epizod = mecz.** Koniec meczu dodaje nagrodę za wynik i ustawia flagę końca epizodu; nowy mecz zaczyna się
+w tym samym ticku, więc kolejna obserwacja wysłana do Pythona jest już pierwszą obserwacją nowego epizodu.
+Do logów trafia `is_success` (wygrana), z którego Stable-Baselines3 liczy `rollout/success_rate`.
+
+**Trening równoległy.** Scena `training.tscn` tworzy N kopii sceny meczu przesuniętych w przestrzeni (jeden
+świat fizyki, areny się nie stykają). Raycasty areny działają we współrzędnych globalnych, a logika gry
+w lokalnych. Jeden `ArenaSync` obsługuje wszystkie areny naraz, a Python widzi je jako N równoległych środowisk.
+Każda arena ma własne ziarno. Przyspieszenie uzyskujemy argumentem `--speedup` (więcej ticków fizyki na sekundę
+czasu rzeczywistego przy stałym kroku 1/60 s), a nie przez wydłużenie kroku fizyki.
+
+**Curriculum**: najpierw przeciwnik losowy (nauka podstaw: celowanie, strzał, ruch), potem skryptowy (przeciwnik
+celujący z wyprzedzeniem i robiący uniki), potem rozmyty. Każdy etap uruchamia grę z innym przeciwnikiem
+i kontynuuje trening tego samego modelu.
+
+**PPO** (Stable-Baselines3): sieć 2×128, `n_steps` 512 na środowisko, `batch_size` 512, 10 epok, lr 3·10⁻⁴,
+γ = 0,99, λ = 0,95, współczynnik entropii 0,01.
+
+**Wyniki pierwszego treningu (wersja 1 nagród) i analiza.** Po 1,6 mln kroków bot RL nie wygrał żadnego meczu
+treningowego. Mecze testowe (6 na parę): z losowym 2:3 (1 remis), ze skryptowym 0:6. Statystyki z CSV pokazały,
+czego bot się nauczył:
+- oddaje dokładnie 5 strzałów, czyli całą amunicję startową, na początku meczu, bez celowania,
+- nigdy nie podnosi amunicji, więc przez resztę meczu nie może strzelać,
+- robi zryw przy każdej możliwości (39 na mecz, maksimum przy czasie odnowienia 1,5 s), co ogranicza otrzymane trafienia.
+
+Przyczyny: nagroda za trafienie jest rzadka (zdarza się dopiero, gdy bot jednocześnie widzi przeciwnika, wyceluje
+i trafi poruszający się cel pociskiem z czasem lotu), więc sygnał uczący do celowania prawie nie występuje. Kara
+za strzał (−0,03) jest za mała, żeby zniechęcić do strzałów na ślepo, a pakiety amunicji nie mają nagrody
+prowadzącej do nich (+0,2 dopiero po podniesieniu, którego losowa eksploracja prawie nie osiąga). Zrywy nic nie
+kosztują, a zmniejszają otrzymane obrażenia, więc polityka szybko się na nich zatrzymała.
+
+Wniosek: przy fizyce z czasem lotu pocisku i ograniczoną amunicją sama nagroda za wynik i trafienia jest za rzadka.
+Potrzebne jest kształtowanie nagrody (reward shaping), które daje sygnał za kroki pośrednie: poprawę celowania,
+strzały oddane przy dobrym celowaniu, zbliżanie się do amunicji, gdy jej brakuje.
+
+### 3.8. Zbieranie danych do eksperymentów
 
 Każdy mecz trybu wsadowego zapisuje wiersz CSV z metrykami wymaganymi w temacie (zwycięzca, zużycie amunicji,
 celność, otrzymane obrażenia) oraz metrykami związanymi z fizyką (trafienia z rykoszetu, samotrafienia, uniki).
 W każdym wierszu zapisujemy też parametry fizyki z konfiguracji, więc wyniki różnych eksperymentów można
 połączyć w jednym pliku i grupować w analizie (pandas) bez dodatkowych metadanych.
 
-### 3.8. Powtarzalność wyników
+### 3.9. Powtarzalność wyników
 
 Każdy mecz ma ziarno `rng_seed + numer meczu`. Ziarno ustawia globalny generator i generatory obu mózgów
 (różne ziarna dla A i B). Strony areny zmieniają się co mecz. Dwa przebiegi serii z tym samym ziarnem dają
@@ -233,11 +319,12 @@ Problemy napotkane w smoke teście i rozwiązania:
 | Stable-Baselines3: algorytm PPO | `ScriptedBrain` (FSM, celowanie z wyprzedzeniem, unik), moduł `Steering` |
 | PyTorch, ONNX, OnnxRuntime | tryb wsadowy, statystyki meczów, powtarzalność przez ziarna |
 | | silnik logiki rozmytej (Mamdani) z parserem reguł i testami, baza reguł, `FuzzyBrain`, wspólny moduł zachowań, punkty osłony |
-| | (w planach) funkcja nagrody i curriculum RL, eksperymenty, wizualizacje |
+| | środowisko RL: koder obserwacji, funkcja nagrody, `ArenaSync` (synchronizacja z zegarem decyzji gry), trening równoległy na wielu arenach, curriculum |
+| | (w planach) eksperymenty, wizualizacje |
 
 ## 7. Do zrobienia (stan na 31.10.2026)
 
 - dalsze strojenie reguł bota rozmytego na podstawie turnieju,
-- środowisko RL na właściwej arenie (obserwacje, nagrody, curriculum) i trening,
+- ocena bota RL, strojenie nagród, ewentualnie self-play,
 - turniej, eksperymenty z parametrami fizyki, wykresy,
 - wizualizacja „myślenia” botów, menu meczu, sprawozdanie.
