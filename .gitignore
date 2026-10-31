@@ -26,3 +26,7 @@ build/
 Thumbs.db
 .idea/
 .vscode/
+
+# Checkpointy SB3 (do ONNX wersjonujemy tylko wynik)
+godot/models/*.zip
+godot/models/*.onnx.data

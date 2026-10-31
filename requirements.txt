@@ -1,0 +1,9 @@
+godot_rl==0.8.2
+gymnasium==1.0.0
+numpy==1.26.4
+onnx==1.23.2
+onnxruntime==1.31.1
+stable_baselines3==2.4.0
+tensorboard==2.21.0
+torch==2.15.0
+onnxscript==0.7.2
