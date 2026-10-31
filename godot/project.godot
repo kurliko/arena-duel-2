@@ -11,6 +11,7 @@ config_version=5
 [application]
 
 config/name="Arena Duel"
+run/main_scene="res://scenes/match.tscn"
 config/features=PackedStringArray("4.7", "C#", "GL Compatibility")
 
 [dotnet]
@@ -20,6 +21,20 @@ project/assembly_name="ArenaDuel"
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/godot_rl_agents/plugin.cfg")
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=860
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[layer_names]
+
+2d_physics/layer_1="walls"
+2d_physics/layer_2="fighters"
+2d_physics/layer_3="projectiles"
+2d_physics/layer_4="pickups"
 
 [physics]
 

@@ -41,6 +41,23 @@ Kod gry jest w GDScript. Build .NET jest potrzebny tylko do inferencji ONNX w pl
 3. Po lewej na dole jest panel **System plików** (`res://` to folder `godot/`). Dwuklik na scenie `.tscn` otwiera ją w edytorze, dwuklik na `.gd` otwiera skrypt.
 4. Scenę uruchamiasz klawiszem **F6** (bieżąca scena) albo przyciskiem z „klapsem” w prawym górnym rogu. **F8** zatrzymuje grę.
 5. Komunikaty `print()` i błędy widać w panelu **Wyjście** na dole edytora.
+6. Po przełączeniu na zakładkę **2D** (góra okna, środek) widać otwartą scenę.
+
+## Mecz botów
+
+Scena główna to `res://scenes/match.tscn`. W edytorze uruchamia się ją klawiszem **F5** (scena główna).
+Boty walczą w serii meczów bez końca, a strony areny zmieniają się co mecz. Wynik po każdym meczu widać w panelu **Wyjście**.
+
+- Mózgi wybiera się w węźle `MatchManager` (Inspektor): `Brain A Name`, `Brain B Name` (`scripted` albo `random`).
+- Parametry gry i fizyki są w `res://data/configs/default.tres` (dwuklik otwiera je w Inspektorze).
+- Układ areny jest w `res://data/arenas/default_layout.tres`. Arena jest widoczna w edytorze bez uruchamiania gry.
+
+Seria meczów bez grafiki (tryb wsadowy), np. 20 meczów skryptowy kontra losowy z ziarnem 7:
+```
+Godot_v4.7.2-stable_mono_win64_console.exe --headless --fixed-fps 60 --path godot -- --matches=20 --brain-a=scripted --brain-b=random --seed=7
+```
+Argumenty po `--`: `--brain-a`, `--brain-b`, `--matches` (0 = bez końca), `--seed`, `--config=res://data/configs/....tres`.
+Ten sam seed daje identyczne wyniki.
 
 ## Smoke test Godot RL Agents
 

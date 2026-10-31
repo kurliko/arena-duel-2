@@ -4,6 +4,8 @@ extends RefCounted
 ## Zawiera wyłącznie to, co ten bot może wiedzieć. Wektory są względne
 ## i znormalizowane (ok. -1..1) przez budującą je grę.
 
+## Pozycja względem lewego górnego rogu areny.
+var self_position: Vector2 = Vector2.ZERO
 var self_velocity: Vector2 = Vector2.ZERO
 var self_aim_angle: float = 0.0
 var self_hp: float = 1.0
@@ -19,6 +21,7 @@ var opponent_hp: float = 0.0
 ## Każdy element: {"pos": Vector2, "vel": Vector2} względem bota, k najbliższych.
 var nearest_projectiles: Array[Dictionary] = []
 ## Odległości raycastów do ścian i przeszkód (znormalizowane 0..1).
+## Promień i ma kierunek ruchu Action i+1 (0 = w prawo, dalej co 45 stopni zgodnie z zegarem).
 var ray_distances: PackedFloat32Array = PackedFloat32Array()
 var ammo_pickup_relative_pos: Vector2 = Vector2.ZERO
 var ammo_pickup_available: bool = false

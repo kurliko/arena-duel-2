@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="ArenaLayout" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/arena_layout.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+size = Vector2(1200, 720)
+wall_thickness = 40.0
+obstacles = Array[Rect2]([Rect2(560, 290, 80, 140), Rect2(250, 150, 180, 40), Rect2(770, 530, 180, 40), Rect2(250, 470, 40, 160), Rect2(910, 90, 40, 160), Rect2(440, 560, 40, 100), Rect2(720, 60, 40, 100)])
+spawn_points = Array[Vector2]([Vector2(100, 360), Vector2(1100, 360)])
+pickup_points = Array[Vector2]([Vector2(600, 100), Vector2(600, 620)])

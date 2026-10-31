@@ -1,0 +1,34 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/arena.gd" id="1"]
+[ext_resource type="Resource" path="res://data/arenas/default_layout.tres" id="2"]
+[ext_resource type="Script" path="res://scripts/core/match_manager.gd" id="3"]
+[ext_resource type="Resource" path="res://data/configs/default.tres" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="5"]
+
+[node name="Match" type="Node2D"]
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(600, 330)
+
+[node name="Arena" type="Node2D" parent="."]
+script = ExtResource("1")
+layout = ExtResource("2")
+
+[node name="Pickups" type="Node2D" parent="."]
+
+[node name="Fighters" type="Node2D" parent="."]
+
+[node name="Projectiles" type="Node2D" parent="."]
+
+[node name="MatchManager" type="Node" parent="." node_paths=PackedStringArray("arena", "fighters_root", "projectiles_root", "pickups_root")]
+script = ExtResource("3")
+config = ExtResource("4")
+arena = NodePath("../Arena")
+fighters_root = NodePath("../Fighters")
+projectiles_root = NodePath("../Projectiles")
+pickups_root = NodePath("../Pickups")
+
+[node name="HUD" type="CanvasLayer" parent="." node_paths=PackedStringArray("match_manager")]
+script = ExtResource("5")
+match_manager = NodePath("../MatchManager")
