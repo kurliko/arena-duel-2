@@ -9,7 +9,7 @@
 [node name="Match" type="Node2D"]
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(600, 330)
+position = Vector2(600, 310)
 
 [node name="Arena" type="Node2D" parent="."]
 script = ExtResource("1")

@@ -24,6 +24,11 @@ static func build(me: Fighter, opponent: Fighter, arena: Arena, projectiles: Arr
 		obs.opponent_hp = opponent.hp / config.max_hp
 
 	obs.nearest_projectiles = _visible_projectiles(me, arena, projectiles, config)
+	if obs.opponent_visible:
+		var cover: Vector2 = _nearest_cover(me.position, opponent.position, arena, config)
+		obs.cover_available = cover.is_finite()
+		if obs.cover_available:
+			obs.cover_relative_pos = (cover - me.position) / scale
 
 	obs.ray_distances.resize(config.vision_rays)
 	for i: int in config.vision_rays:
@@ -57,3 +62,34 @@ static func _visible_projectiles(me: Fighter, arena: Arena, projectiles: Array[P
 			"vel": p.velocity / config.projectile_speed,
 		})
 	return result
+
+
+## Punkt osłony: dla każdej przeszkody punkt tuż za nią po stronie przeciwnej do przeciwnika.
+## Wybierany jest najbliższy botowi punkt wewnątrz areny, poza przeszkodami i zasłonięty przed przeciwnikiem.
+## Zwraca Vector2(INF, INF), gdy nie ma takiego punktu. Układ przeszkód to wiedza o mapie, wspólna dla obu botów.
+static func _nearest_cover(me_pos: Vector2, opponent_pos: Vector2, arena: Arena, config: GameConfig) -> Vector2:
+	var clearance: float = config.fighter_radius + config.cover_margin
+	var interior := Rect2(Vector2.ZERO, arena.layout.size).grow(-clearance)
+	var best := Vector2(INF, INF)
+	var best_distance: float = INF
+	for rect: Rect2 in arena.layout.obstacles:
+		var away: Vector2 = (rect.get_center() - opponent_pos).normalized()
+		# Odległość od środka prostokąta do jego krawędzi w kierunku `away`, plus odstęp postaci.
+		var extent: float = absf(away.x) * rect.size.x / 2.0 + absf(away.y) * rect.size.y / 2.0
+		var candidate: Vector2 = rect.get_center() + away * (extent + clearance)
+		if not interior.has_point(candidate) or _inside_any_obstacle(candidate, arena, clearance):
+			continue
+		if arena.has_line_of_sight(opponent_pos, candidate):
+			continue
+		var distance: float = me_pos.distance_to(candidate)
+		if distance < best_distance:
+			best_distance = distance
+			best = candidate
+	return best
+
+
+static func _inside_any_obstacle(point: Vector2, arena: Arena, clearance: float) -> bool:
+	for rect: Rect2 in arena.layout.obstacles:
+		if rect.grow(clearance).has_point(point):
+			return true
+	return false

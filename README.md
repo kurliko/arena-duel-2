@@ -48,7 +48,8 @@ Kod gry jest w GDScript. Build .NET jest potrzebny tylko do inferencji ONNX w pl
 Scena główna to `res://scenes/match.tscn`. W edytorze uruchamia się ją klawiszem **F5** (scena główna).
 Boty walczą w serii meczów bez końca, a strony areny zmieniają się co mecz. Wynik po każdym meczu widać w panelu **Wyjście**.
 
-- Mózgi wybiera się w węźle `MatchManager` (Inspektor): `Brain A Name`, `Brain B Name` (`scripted` albo `random`).
+- Mózgi wybiera się w węźle `MatchManager` (Inspektor): `Brain A Name`, `Brain B Name` (`fuzzy`, `scripted` albo `random`).
+- HUD pokazuje bieżące zachowanie bota: dla bota rozmytego wybraną akcję i opłacalność wszystkich czterech, dla skryptowego stan maszyny.
 - Parametry gry i fizyki są w `res://data/configs/default.tres` (dwuklik otwiera je w Inspektorze).
 - Układ areny jest w `res://data/arenas/default_layout.tres`. Arena jest widoczna w edytorze bez uruchamiania gry.
 
@@ -106,6 +107,16 @@ Godot_v4.7.2-stable_mono_win64_console.exe --headless --fixed-fps 60 --path godo
 W wyjściu pojawiają się linie `smoke_test: cel osiągnięty (N)`. `--fixed-fps 60` sprawia, że 3000 klatek to 50 s gry.
 
 Wynik weryfikacji (31.10.2026): trening 20 tys. kroków (średnia nagroda 0,8 → 4,6), eksport ONNX, inferencja w Godocie: 7 dojść do celu w 50 s.
+
+## Bot rozmyty
+
+Własny silnik wnioskowania rozmytego (Mamdani) w `godot/scripts/fuzzy/`, baza reguł w `godot/data/fuzzy_rules.json`.
+Reguły zapisuje się tekstem, np. `IF hp IS low AND visible IS yes THEN cover IS high`; zmiana reguł nie wymaga zmian w kodzie.
+
+Testy jednostkowe silnika:
+```
+Godot_v4.7.2-stable_mono_win64_console.exe --headless --path godot --script res://tests/test_fuzzy.gd
+```
 
 ## Struktura
 

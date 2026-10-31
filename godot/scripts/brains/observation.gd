@@ -25,3 +25,6 @@ var nearest_projectiles: Array[Dictionary] = []
 var ray_distances: PackedFloat32Array = PackedFloat32Array()
 var ammo_pickup_relative_pos: Vector2 = Vector2.ZERO
 var ammo_pickup_available: bool = false
+## Najbliższy punkt za przeszkodą, którego widoczny przeciwnik nie widzi (dostępny tylko, gdy przeciwnik jest widoczny).
+var cover_relative_pos: Vector2 = Vector2.ZERO
+var cover_available: bool = false

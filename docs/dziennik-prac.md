@@ -42,6 +42,17 @@ Autor wpisów: Filip Opacki (na razie całość prac wykonuje jedna osoba).
   (bez rykoszetów) jako pierwszy wariant do eksperymentów z fizyką. Poprawka kolejności argumentów
   (`--config` przed `--seed`) i dokładności limitu czasu meczu.
 
+- **Silnik logiki rozmytej i bot rozmyty** (`FuzzyBrain`):
+  - własny silnik Mamdaniego w GDScript (zbiory trójkątne i trapezowe, reguły tekstowe z AND/OR/NOT i wagami,
+    implikacja min, agregacja max, defuzzyfikacja środkiem ciężkości), 32 testy jednostkowe,
+  - baza 24 reguł w `data/fuzzy_rules.json` (8 wejść, 4 wyjścia),
+  - wspólny moduł zachowań `Behaviors` wydzielony z bota skryptowego (refaktoryzacja zweryfikowana: identyczne
+    wyniki serii kontrolnej przed i po zmianie), nowe zachowania: osłona i unik bez zrywu,
+  - percepcja rozszerzona o punkt osłony za przeszkodą,
+  - HUD pokazuje bieżące zachowanie botów i opłacalności akcji bota rozmytego.
+- Wyniki (20 meczów, seed 1): rozmyty kontra losowy 20:0; rozmyty kontra skryptowy: wersja 1 reguł 3:12
+  (5 remisów), po strojeniu 8:10 (2 remisy).
+
 ---
 
 ## 2. Architektura: wspólne ciało, wymienny mózg
@@ -122,14 +133,58 @@ Po zmianie mecze są wyrównane (4:4), a wyniki dalej w pełni powtarzalne. Wnio
 areny zapewnia równe szanse, ale przy deterministycznych przeciwnikach potrzebny jest mechanizm łamania
 symetrii, a percepcja oparta na linii wzroku silnie wpływa na zachowanie botów.
 
-### 3.6. Zbieranie danych do eksperymentów
+### 3.6. Bot rozmyty
+
+**Silnik** (`scripts/fuzzy/`, własna implementacja):
+1. *Fuzzyfikacja*: każda zmienna wejściowa ma zakres i nazwane zbiory z funkcją przynależności trapezową
+   (trójkąt jako szczególny przypadek, ramiona na krańcach zakresu). Wartość spoza zakresu jest obcinana.
+2. *Reguły* zapisane tekstem: `IF hp IS low AND visible IS yes THEN cover IS high`. Parser obsługuje AND, OR,
+   NOT i wagi reguł oraz sprawdza, czy zmienne i zbiory istnieją.
+3. *Wnioskowanie*: siła reguły to min (AND) albo max (OR) stopni przynależności. Zbiór wyjściowy jest obcinany
+   do siły reguły (implikacja min), a reguły prowadzące do tego samego zbioru łączy max.
+4. *Defuzzyfikacja* metodą środka ciężkości: zakres wyjścia próbkowany w 101 punktach.
+5. *Wybór akcji*: zachowanie o największej opłacalności, z premią 0,05 dla zachowania z poprzedniej decyzji
+   (histereza ogranicza przeskakiwanie przy zbliżonych ocenach).
+
+**Wejścia** (liczone z `Observation`): odległość do przeciwnika, własne HP, amunicja, widoczność przeciwnika,
+zagrożenie pociskiem, prędkość przeciwnika, HP przeciwnika, odległość do pakietu amunicji.
+Zagrożenie pociskiem to wielkość fizyczna: dla każdego nadlatującego pocisku liczymy czas do największego
+zbliżenia i odległość minięcia, a zagrożenie = (1 − t/1 s) · (1 − odległość/(4 · promień)), obcięte do 0..1.
+
+**Wyjścia**: opłacalność (0..1) czterech zachowań: atak, unik, osłona, zbieranie amunicji.
+
+**Reguły związane z fizyką**, np.:
+- `IF visible IS yes AND distance IS far AND opponent_speed IS fast THEN attack IS low`: pocisk leci długo,
+  a szybki przeciwnik zdąży zmienić tor (czas lotu i bezwładność),
+- `IF threat IS medium AND distance IS near THEN dodge IS high`: z bliska jest mniej czasu na reakcję,
+- `IF threat IS high THEN attack IS low`: nadlatujący pocisk obniża opłacalność ataku.
+
+**Wspólne zachowania.** Bot skryptowy i rozmyty korzystają z tego samego modułu `Behaviors` (celowanie
+z wyprzedzeniem, utrzymywanie dystansu, szukanie, osłona, unik). Różnią się wyłącznie sposobem wyboru
+zachowania: maszyna stanów z ostrymi progami kontra wnioskowanie rozmyte. Porównanie w turnieju mierzy więc
+metodę decyzyjną, a nie jakość niskopoziomowego sterowania. Przed wydzieleniem modułu zapisaliśmy wyniki serii
+kontrolnej (skryptowy kontra skryptowy, 8 meczów, seed 7). Po zmianie wyniki były identyczne.
+
+**Osłona.** Percepcja wylicza punkt osłony: dla każdej przeszkody punkt tuż za nią po stronie przeciwnej do
+przeciwnika, wewnątrz areny, poza przeszkodami i niewidoczny dla przeciwnika (raycast). Wybierany jest najbliższy
+botowi. Układ przeszkód to wiedza o mapie wspólna dla wszystkich botów.
+
+**Strojenie reguł (przykład).** Wersja 1 bazy przegrywała z botem skryptowym 3:12 (5 remisów). Licznik wyborów
+zachowań pokazał, że unik był wybierany rzadko (kilka razy na kilkaset decyzji), a bot rozmyty wykonywał mniej
+zrywów niż skryptowy, który robi unik odruchowo w każdym stanie. Przyczyna: przy nadlatującym pocisku atak
+nadal miał wysoką opłacalność i wygrywał z unikiem. Dodanie reguł `IF threat IS high THEN attack IS low`
+i `IF threat IS high THEN collect IS low` sprawia, że środek ciężkości ataku spada przy zagrożeniu (agregat
+„wysoko” i „nisko”) i wygrywa unik. Wynik po zmianie: 8:10 (2 remisy). To pokazuje zaletę bazy reguł
+w pliku: zmianę zachowania uzyskaliśmy bez zmian w kodzie.
+
+### 3.7. Zbieranie danych do eksperymentów
 
 Każdy mecz trybu wsadowego zapisuje wiersz CSV z metrykami wymaganymi w temacie (zwycięzca, zużycie amunicji,
 celność, otrzymane obrażenia) oraz metrykami związanymi z fizyką (trafienia z rykoszetu, samotrafienia, uniki).
 W każdym wierszu zapisujemy też parametry fizyki z konfiguracji, więc wyniki różnych eksperymentów można
 połączyć w jednym pliku i grupować w analizie (pandas) bez dodatkowych metadanych.
 
-### 3.7. Powtarzalność wyników
+### 3.8. Powtarzalność wyników
 
 Każdy mecz ma ziarno `rng_seed + numer meczu`. Ziarno ustawia globalny generator i generatory obu mózgów
 (różne ziarna dla A i B). Strony areny zmieniają się co mecz. Dwa przebiegi serii z tym samym ziarnem dają
@@ -177,11 +232,12 @@ Problemy napotkane w smoke teście i rozwiązania:
 | Godot RL Agents: węzły `Sync`, `AIController2D`, inferencja ONNX | architektura ciało/mózg, kontrakty `Brain`/`Observation`/`Action`, percepcja z linią wzroku |
 | Stable-Baselines3: algorytm PPO | `ScriptedBrain` (FSM, celowanie z wyprzedzeniem, unik), moduł `Steering` |
 | PyTorch, ONNX, OnnxRuntime | tryb wsadowy, statystyki meczów, powtarzalność przez ziarna |
-| | (w planach) silnik rozmyty i reguły, funkcja nagrody i curriculum RL, eksperymenty, wizualizacje |
+| | silnik logiki rozmytej (Mamdani) z parserem reguł i testami, baza reguł, `FuzzyBrain`, wspólny moduł zachowań, punkty osłony |
+| | (w planach) funkcja nagrody i curriculum RL, eksperymenty, wizualizacje |
 
 ## 7. Do zrobienia (stan na 31.10.2026)
 
-- silnik logiki rozmytej i `FuzzyBrain`,
+- dalsze strojenie reguł bota rozmytego na podstawie turnieju,
 - środowisko RL na właściwej arenie (obserwacje, nagrody, curriculum) i trening,
 - turniej, eksperymenty z parametrami fizyki, wykresy,
 - wizualizacja „myślenia” botów, menu meczu, sprawozdanie.

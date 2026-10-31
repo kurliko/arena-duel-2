@@ -4,6 +4,10 @@ extends CanvasLayer
 
 const MARGIN: float = 12.0
 const FONT_SIZE: int = 18
+const BEHAVIOR_NAMES: Dictionary = {"attack": "ATAK", "dodge": "UNIK", "cover": "OSŁONA", "collect": "AMUNICJA"}
+const STATE_NAMES: Dictionary = {
+	ScriptedBrain.State.ATTACK: "ATAK", ScriptedBrain.State.SEEK_AMMO: "AMUNICJA", ScriptedBrain.State.SEARCH: "SZUKANIE",
+}
 
 @export var match_manager: MatchManager
 
@@ -35,8 +39,8 @@ func _process(_delta: float) -> void:
 	var m: MatchManager = match_manager
 	if m == null or m.fighter_a == null:
 		return
-	_label_a.text = _fighter_text("A", m.brain_a_name, m.fighter_a)
-	_label_b.text = _fighter_text("B", m.brain_b_name, m.fighter_b)
+	_label_a.text = _fighter_text("A", m.brain_a_name, m.fighter_a) + _brain_text(m.brain_a)
+	_label_b.text = _fighter_text("B", m.brain_b_name, m.fighter_b) + _brain_text(m.brain_b)
 	_label_a.add_theme_color_override("font_color", MatchManager.COLOR_A)
 	_label_b.add_theme_color_override("font_color", MatchManager.COLOR_B)
 	_label_center.text = "mecz %d   czas %.1f / %.0f s\nA %d : %d B   remisy %d" % [
@@ -45,3 +49,16 @@ func _process(_delta: float) -> void:
 
 func _fighter_text(side: String, brain_name: String, fighter: Fighter) -> String:
 	return "%s: %s\nHP %.0f   amunicja %d" % [side, brain_name, fighter.hp, fighter.ammo]
+
+
+## Bieżące zachowanie mózgu: wybrana akcja bota rozmytego z opłacalnościami albo stan FSM.
+func _brain_text(brain: Brain) -> String:
+	var fuzzy := brain as FuzzyBrain
+	if fuzzy != null and not fuzzy.last_outputs.is_empty():
+		var o: Dictionary = fuzzy.last_outputs
+		return "\n%s   [atak %.2f  unik %.2f  osłona %.2f  amunicja %.2f]" % [
+			BEHAVIOR_NAMES[fuzzy.chosen], o["attack"], o["dodge"], o["cover"], o["collect"]]
+	var scripted := brain as ScriptedBrain
+	if scripted != null:
+		return "\n" + STATE_NAMES[scripted.state]
+	return ""

@@ -51,3 +51,5 @@ extends Resource
 @export var ray_length: float = 600.0
 ## Odległość, przez którą dzielimy pozycje w Observation (normalizacja do ok. -1..1).
 @export var observation_distance_scale: float = 1200.0
+## Odstęp punktu osłony od krawędzi przeszkody (px, ponad promień postaci).
+@export var cover_margin: float = 12.0
