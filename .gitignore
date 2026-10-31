@@ -30,3 +30,6 @@ Thumbs.db
 # Checkpointy SB3 (do ONNX wersjonujemy tylko wynik)
 godot/models/*.zip
 godot/models/*.onnx.data
+
+# Przebiegi treningu RL (logi, checkpointy); wynikowe modele trafiają do godot/models
+training/runs/

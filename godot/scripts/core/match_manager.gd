@@ -5,6 +5,8 @@ extends Node
 ##
 ## Argumenty użytkownika (po `--`): --brain-a=NAZWA --brain-b=NAZWA --matches=N --seed=S --config=res://...
 ##   --csv=ŚCIEŻKA (dopisywanie wyników; ścieżka względna liczona od katalogu repozytorium)
+##   --rl-model=res://models/....onnx --rl-deterministic=1 --quiet=1
+## Mózg "rl": bot sterowany polityką z Godot RL Agents (model ONNX w grze albo Python podczas treningu).
 
 signal match_started(match_index: int)
 signal match_finished(result: MatchResult)
@@ -24,6 +26,19 @@ const TIME_EPSILON: float = 1e-4
 @export var matches_to_play: int = 0
 ## Plik CSV z wynikami (pusty = bez zapisu).
 @export var csv_path: String = ""
+## Bez wypisywania wyniku każdego meczu (trening).
+@export var quiet: bool = false
+## false: ignoruj argumenty linii poleceń (TrainingScene ustawia parametry każdej areny sama).
+@export var read_command_line: bool = true
+
+@export_group("RL")
+## Model ONNX dla mózgu "rl" przy grze bez Pythona.
+@export var rl_model_path: String = "res://models/rl_brain.onnx"
+## true: zawsze akcja o największym prawdopodobieństwie; false: losowanie z rozkładu polityki.
+@export var rl_deterministic: bool = false
+@export var reward_config: RewardConfig
+## true: decyzje wyzwala zewnętrzny zegar (TrainingScene z wieloma arenami i wspólnym Sync).
+@export var external_clock: bool = false
 
 var fighter_a: Fighter
 var fighter_b: Fighter
@@ -42,18 +57,30 @@ var _tick: int = 0
 var _someone_died: bool = false
 var _sides_swapped: bool = false
 var _csv: CsvWriter
+var _obs_a: Observation
+var _obs_b: Observation
+var controller_a: RLController
+var controller_b: RLController
+var _sync: ArenaSync
 
 
 func _ready() -> void:
 	# Decyzje zapadają przed ruchem postaci i pocisków w tym samym ticku.
 	process_physics_priority = -10
-	_apply_command_line()
+	if read_command_line:
+		_apply_command_line()
 	if not csv_path.is_empty():
 		_csv = CsvWriter.new()
 		if _csv.open(csv_path) == OK:
 			print("wyniki zapisywane do ", _csv.path)
 	fighter_a = _create_fighter(COLOR_A, MatchResult.WINNER_A)
 	fighter_b = _create_fighter(COLOR_B, MatchResult.WINNER_B)
+	if brain_a_name == BrainFactory.RL:
+		controller_a = _create_rl_controller(fighter_a)
+	if brain_b_name == BrainFactory.RL:
+		controller_b = _create_rl_controller(fighter_b)
+	if (controller_a != null or controller_b != null) and not external_clock:
+		_create_inference_sync()
 	for point: Vector2 in arena.layout.pickup_points:
 		var pickup := AmmoPickup.new()
 		pickup.setup(config, point)
@@ -75,6 +102,9 @@ func _apply_command_line() -> void:
 	brain_b_name = args.get("brain-b", brain_b_name)
 	matches_to_play = int(args.get("matches", matches_to_play))
 	csv_path = args.get("csv", csv_path)
+	rl_model_path = args.get("rl-model", rl_model_path)
+	rl_deterministic = args.get("rl-deterministic", "1" if rl_deterministic else "0") == "1"
+	quiet = args.get("quiet", "1" if quiet else "0") == "1"
 	if args.has("seed"):
 		config.rng_seed = int(args["seed"])
 
@@ -86,6 +116,31 @@ func _create_fighter(color: Color, label: String) -> Fighter:
 	fighter.died.connect(_on_fighter_died)
 	fighters_root.add_child(fighter)
 	return fighter
+
+
+func _create_rl_controller(fighter: Fighter) -> RLController:
+	if reward_config == null:
+		reward_config = load("res://data/rl/reward_default.tres") as RewardConfig
+	var controller := RLController.new()
+	controller.setup(config, reward_config, fighter)
+	fighter.add_child(controller)
+	return controller
+
+
+## Gra bez Pythona: Sync w trybie inferencji ONNX, wywoływany przez ten MatchManager w tickach decyzji.
+func _create_inference_sync() -> void:
+	_sync = ArenaSync.new()
+	_sync.name = "ArenaSync"
+	_sync.control_mode = 2  # Sync.ControlModes.ONNX_INFERENCE
+	_sync.onnx_model_path = rl_model_path
+	_sync.deterministic_inference = rl_deterministic
+	add_child(_sync)
+
+
+func _create_brain(brain_name: String, controller: RLController) -> Brain:
+	if brain_name == BrainFactory.RL:
+		return RLBrain.new(controller)
+	return BrainFactory.create(brain_name, config)
 
 
 func is_headless() -> bool:
@@ -107,10 +162,13 @@ func start_match() -> void:
 	var spawn_b: Vector2 = spawns[0] if swap else spawns[1]
 	fighter_a.reset_at(spawn_a, (arena.center() - spawn_a).angle())
 	fighter_b.reset_at(spawn_b, (arena.center() - spawn_b).angle())
-	brain_a = BrainFactory.create(brain_a_name, config)
-	brain_b = BrainFactory.create(brain_b_name, config)
+	brain_a = _create_brain(brain_a_name, controller_a)
+	brain_b = _create_brain(brain_b_name, controller_b)
 	brain_a.reset(match_seed * 2)
 	brain_b.reset(match_seed * 2 + 1)
+	for controller: RLController in [controller_a, controller_b]:
+		if controller != null:
+			controller.begin_episode()
 	_tick = 0
 	elapsed = 0.0
 	_someone_died = false
@@ -124,17 +182,35 @@ func _physics_process(delta: float) -> void:
 	if _someone_died:
 		_finish(MatchResult.REASON_DEATH)
 		return
-	if _tick % config.decision_interval_ticks == 0:
-		var projectiles: Array[Projectile] = active_projectiles()
-		fighter_a.apply_action(brain_a.decide(
-				Perception.build(fighter_a, fighter_b, arena, projectiles, pickups, config)))
-		fighter_b.apply_action(brain_b.decide(
-				Perception.build(fighter_b, fighter_a, arena, projectiles, pickups, config)))
+	if not external_clock and _tick % config.decision_interval_ticks == 0:
+		collect_observations()
+		if _sync != null:
+			_sync.step()
+		apply_decisions()
 	_tick += 1
 	elapsed += delta
 	# Tolerancja na błąd zaokrąglenia sumy kroków (inaczej limit 60 s kończyłby się po 60,017 s).
 	if elapsed >= config.max_match_seconds - TIME_EPSILON:
 		_finish(MatchResult.REASON_TIME)
+
+
+## Pierwsza połowa decyzji: obserwacje obu botów i przekazanie ich mózgom (Brain.observe).
+func collect_observations() -> void:
+	if not running:
+		return
+	var projectiles: Array[Projectile] = active_projectiles()
+	_obs_a = Perception.build(fighter_a, fighter_b, arena, projectiles, pickups, config)
+	_obs_b = Perception.build(fighter_b, fighter_a, arena, projectiles, pickups, config)
+	brain_a.observe(_obs_a)
+	brain_b.observe(_obs_b)
+
+
+## Druga połowa decyzji: akcje z mózgów trafiają do postaci.
+func apply_decisions() -> void:
+	if not running:
+		return
+	fighter_a.apply_action(brain_a.decide(_obs_a))
+	fighter_b.apply_action(brain_b.decide(_obs_b))
 
 
 func active_projectiles() -> Array[Projectile]:
@@ -182,7 +258,9 @@ func _finish(reason: String) -> void:
 			wins_b += 1
 		_:
 			draws += 1
-	print(result.summary())
+	if not quiet:
+		print(result.summary())
+	_end_rl_episodes(result.winner)
 	if _csv != null:
 		_csv.write(result, config)
 	match_finished.emit(result)
@@ -197,6 +275,19 @@ func _finish(reason: String) -> void:
 	if not is_headless():
 		await get_tree().create_timer(config.between_matches_delay).timeout
 	start_match()
+
+
+func _end_rl_episodes(winner: String) -> void:
+	if controller_a != null:
+		controller_a.end_episode(_outcome_for(MatchResult.WINNER_A, winner))
+	if controller_b != null:
+		controller_b.end_episode(_outcome_for(MatchResult.WINNER_B, winner))
+
+
+func _outcome_for(side: String, winner: String) -> String:
+	if winner == MatchResult.DRAW:
+		return "draw"
+	return "win" if winner == side else "loss"
 
 
 func _decide_winner(reason: String) -> String:

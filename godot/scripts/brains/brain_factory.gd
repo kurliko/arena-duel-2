@@ -4,6 +4,8 @@ class_name BrainFactory
 const RANDOM: String = "random"
 const SCRIPTED: String = "scripted"
 const FUZZY: String = "fuzzy"
+## Bot RL wymaga RLController, więc tworzy go MatchManager (nie ta fabryka).
+const RL: String = "rl"
 
 
 static func create(brain_name: String, config: GameConfig) -> Brain:

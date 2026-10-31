@@ -5,31 +5,16 @@ Skrypt otwiera serwer na porcie 11008 i czeka, aż połączy się z nim gra
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
 
-import onnx
-from godot_rl.wrappers.onnx.stable_baselines_export import export_model_as_onnx
 from godot_rl.wrappers.stable_baselines_wrapper import StableBaselinesGodotEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import VecMonitor
 
+from onnx_export import export_single_file_onnx
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-
-def export_single_file_onnx(model: PPO, onnx_path: Path) -> None:
-    """Eksport do ONNX jako jeden plik.
-
-    Nowy eksporter PyTorcha zapisuje wagi osobno (.onnx.data), a plugin w Godocie
-    wczytuje model z bufora bajtów, więc wagi muszą być wewnątrz pliku .onnx.
-    """
-    export_model_as_onnx(model, str(onnx_path))
-    merged = onnx.load(str(onnx_path))  # dociąga wagi z .onnx.data
-    onnx.save(merged, str(onnx_path), save_as_external_data=False)
-    data_file = onnx_path.with_name(onnx_path.name + ".data")
-    if data_file.exists():
-        os.remove(data_file)
 
 
 def main() -> None:

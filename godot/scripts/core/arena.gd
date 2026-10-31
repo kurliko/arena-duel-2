@@ -67,16 +67,18 @@ func center() -> Vector2:
 	return layout.size / 2.0
 
 
-## Czy między punktami nie ma ściany ani przeszkody.
+## Czy między punktami nie ma ściany ani przeszkody. Punkty we współrzędnych areny (lokalnych);
+## raycast działa w globalnych, bo w scenie treningowej areny są przesunięte względem siebie.
 func has_line_of_sight(from: Vector2, to: Vector2) -> bool:
-	var query := PhysicsRayQueryParameters2D.create(from, to, PhysicsLayers.WALLS)
+	var query := PhysicsRayQueryParameters2D.create(to_global(from), to_global(to), PhysicsLayers.WALLS)
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
 ## Odległość do najbliższej ściany lub przeszkody w danym kierunku (maksymalnie max_length).
 func ray_distance(from: Vector2, direction: Vector2, max_length: float) -> float:
-	var query := PhysicsRayQueryParameters2D.create(from, from + direction * max_length, PhysicsLayers.WALLS)
+	var query := PhysicsRayQueryParameters2D.create(
+			to_global(from), to_global(from + direction * max_length), PhysicsLayers.WALLS)
 	var hit: Dictionary = get_world_2d().direct_space_state.intersect_ray(query)
 	if hit.is_empty():
 		return max_length
-	return from.distance_to(hit["position"])
+	return from.distance_to(to_local(hit["position"]))
