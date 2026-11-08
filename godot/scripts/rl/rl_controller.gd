@@ -21,6 +21,8 @@ var rewards: RewardConfig
 var fighter: Fighter
 var last_obs: Observation
 var current_action: Action = Action.idle()
+## Ostatnio widziana pozycja przeciwnika (pamięć mózgu RL, jak _last_seen w Behaviors).
+var memory: OpponentMemory = OpponentMemory.new()
 ## Suma nagród w bieżącym epizodzie (do podglądu i logów).
 var episode_reward: float = 0.0
 
@@ -47,6 +49,7 @@ func setup(cfg: GameConfig, reward_config: RewardConfig, owner_fighter: Fighter)
 func begin_episode() -> void:
 	_snapshot()
 	last_obs = null
+	memory.reset()
 	episode_reward = 0.0
 	# _won zostaje do następnego końca epizodu: nowy mecz startuje w tym samym ticku co koniec poprzedniego,
 	# a Python odczytuje is_success dopiero przy kolejnej decyzji (razem z flagą końca epizodu).
@@ -58,6 +61,7 @@ func begin_episode() -> void:
 ## więc to ją bierzemy pod uwagę, oceniając np. czy strzał był oddany na ślepo.
 func on_decision(obs: Observation) -> void:
 	_add(rewards.time_step + _stat_reward() + _shaping_reward(last_obs, obs))
+	memory.update(obs)
 	last_obs = obs
 
 
@@ -141,7 +145,7 @@ func _snapshot() -> void:
 
 
 func get_obs() -> Dictionary:
-	return {"obs": ObservationEncoder.encode(last_obs, config)}
+	return {"obs": ObservationEncoder.encode(last_obs, config, memory)}
 
 
 func get_reward() -> float:

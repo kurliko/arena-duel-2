@@ -4,9 +4,11 @@ class_name ObservationEncoder
 ## i pociski są zwykle bliżej niż observation_distance_scale.
 
 const RELATIVE_GAIN: float = 2.0
-## 11 (bot) + 8 (przeciwnik) + 5 * k (pociski) + rays + 3 (amunicja) + 3 (apteczka) + 5 * k (skrzynie) + 3 (osłona)
-const SELF_SIZE: int = 11
+## 12 (bot, z pozostałym czasem meczu) + 8 (przeciwnik) + 4 (pamięć przeciwnika) + 5 * k (pociski) + rays
+## + 3 (amunicja) + 3 (apteczka) + 5 * k (skrzynie) + 3 (osłona)
+const SELF_SIZE: int = 12
 const OPPONENT_SIZE: int = 8
+const MEMORY_SIZE: int = 4
 const PROJECTILE_SIZE: int = 5
 const PICKUP_SIZE: int = 3
 const CRATE_SIZE: int = 5
@@ -14,11 +16,12 @@ const COVER_SIZE: int = 3
 
 
 static func size(config: GameConfig) -> int:
-	return SELF_SIZE + OPPONENT_SIZE + PROJECTILE_SIZE * config.nearest_projectiles_k \
+	return SELF_SIZE + OPPONENT_SIZE + MEMORY_SIZE + PROJECTILE_SIZE * config.nearest_projectiles_k \
 			+ config.vision_rays + 2 * PICKUP_SIZE + CRATE_SIZE * config.nearest_crates_k + COVER_SIZE
 
 
-static func encode(obs: Observation, config: GameConfig) -> Array[float]:
+## memory: pamięć bota o przeciwniku (stan mózgu RL); null = brak pamięci (same zera).
+static func encode(obs: Observation, config: GameConfig, memory: OpponentMemory = null) -> Array[float]:
 	var values: Array[float] = []
 	if obs == null:
 		values.resize(size(config))
@@ -28,7 +31,7 @@ static func encode(obs: Observation, config: GameConfig) -> Array[float]:
 	values.append_array([
 		obs.self_position.x, obs.self_position.y, obs.self_velocity.x, obs.self_velocity.y,
 		cos(obs.self_aim_angle), sin(obs.self_aim_angle), obs.self_angular_velocity,
-		obs.self_hp, obs.self_ammo, obs.shot_cooldown_left, obs.dash_cooldown_left,
+		obs.self_hp, obs.self_ammo, obs.shot_cooldown_left, obs.dash_cooldown_left, obs.time_left,
 	])
 
 	# Przeciwnik: widoczność, pozycja, prędkość, HP oraz kąt do niego względem celowania (cos, sin),
@@ -42,6 +45,13 @@ static func encode(obs: Observation, config: GameConfig) -> Array[float]:
 		])
 	else:
 		values.append_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+	# Pamięć: gdzie przeciwnik był ostatnio widziany i jak dawno (przydatne, gdy schowa się za przeszkodą).
+	if memory != null and memory.has_last_seen:
+		var last_seen: Vector2 = memory.relative_position(obs)
+		values.append_array([1.0, last_seen.x * RELATIVE_GAIN, last_seen.y * RELATIVE_GAIN, memory.time_since_seen(obs)])
+	else:
+		values.append_array([0.0, 0.0, 0.0, 0.0])
 
 	for i: int in config.nearest_projectiles_k:
 		if i < obs.nearest_projectiles.size():

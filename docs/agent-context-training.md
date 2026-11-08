@@ -146,5 +146,5 @@ conflict with Filip's work). Never force-push.
 | `godot/scripts/rl/reward_config.gd` | reward weights (do not change for this task) |
 | `godot/scripts/rl/training_scene.gd` | N parallel arenas, shared `ArenaSync` |
 | `godot/scripts/rl/arena_sync.gd` | plugin Sync node driven by the game's decision clock |
-| `godot/scripts/rl/observation_encoder.gd` | 61-value observation vector |
+| `godot/scripts/rl/observation_encoder.gd` | 66-value observation vector (incl. time left and opponent memory, `opponent_memory.gd`) |
 | `godot/scripts/core/match_manager.gd` | matches, CLI args (`--brain-a`, `--matches`, `--csv`, `--rl-model`, ...) |

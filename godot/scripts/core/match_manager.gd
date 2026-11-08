@@ -216,6 +216,9 @@ func collect_observations() -> void:
 	var projectiles: Array[Projectile] = active_projectiles()
 	_obs_a = Perception.build(fighter_a, fighter_b, arena, projectiles, pickups, crates, config)
 	_obs_b = Perception.build(fighter_b, fighter_a, arena, projectiles, pickups, crates, config)
+	var time_left: float = clampf(1.0 - elapsed / config.max_match_seconds, 0.0, 1.0)
+	_obs_a.time_left = time_left
+	_obs_b.time_left = time_left
 	brain_a.observe(_obs_a)
 	brain_b.observe(_obs_b)
 

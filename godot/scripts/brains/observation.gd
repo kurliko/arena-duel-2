@@ -15,6 +15,8 @@ var self_hp: float = 1.0
 var self_ammo: float = 0.0
 var shot_cooldown_left: float = 0.0
 var dash_cooldown_left: float = 0.0
+## Pozostały czas meczu jako ułamek limitu (1 = start, 0 = koniec). Zegar meczu znają oba boty.
+var time_left: float = 1.0
 
 var opponent_visible: bool = false
 var opponent_relative_pos: Vector2 = Vector2.ZERO
