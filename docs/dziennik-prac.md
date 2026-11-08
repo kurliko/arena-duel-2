@@ -252,7 +252,7 @@ w innych tickach niż przeciwnik i na podstawie obserwacji spóźnionej o kilka 
 licznik Sync i udostępnia `step()`, który gra wywołuje między zebraniem obserwacji a wykonaniem akcji.
 Bot RL ma więc tę samą częstotliwość decyzji i to samo opóźnienie (zero) co pozostałe boty: porównanie jest uczciwe.
 
-**Obserwacje** (47 wartości w pierwszej wersji, 61 po dodaniu fizyki ciał sztywnych: prędkość kątowa, apteczka, 2 najbliższe skrzynie; `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
+**Obserwacje** (47 wartości w pierwszej wersji, 61 po dodaniu fizyki ciał sztywnych: prędkość kątowa, apteczka, 2 najbliższe skrzynie; 66 po dodaniu pozostałego czasu meczu i pamięci przeciwnika; `ObservationEncoder`): spłaszczona ta sama `Observation`, którą dostają inne mózgi:
 własna pozycja, prędkość, kierunek celowania (cos, sin), HP, amunicja, czasy odnowienia; przeciwnik (widoczność,
 pozycja i prędkość względna, HP, kąt do przeciwnika względem celowania); 3 najbliższe widoczne pociski (pozycja
 i prędkość względna); 8 raycastów; najbliższy pakiet amunicji; punkt osłony. Pola niewidocznych obiektów są zerowane
@@ -449,6 +449,17 @@ Problemy napotkane w smoke teście i rozwiązania:
 | | silnik logiki rozmytej (Mamdani) z parserem reguł i testami, baza reguł, `FuzzyBrain`, wspólny moduł zachowań, punkty osłony |
 | | środowisko RL: koder obserwacji, funkcja nagrody, `ArenaSync` (synchronizacja z zegarem decyzji gry), trening równoległy na wielu arenach, curriculum |
 | | (w planach) eksperymenty, wizualizacje |
+
+### Wyrównanie szans bota RL (08.11.2026)
+
+Przed długim treningiem obserwacje bota RL uzupełniliśmy o dwie rzeczy, które pozostałe boty już miały albo mogły znać:
+- **pamięć przeciwnika** (`OpponentMemory`): ostatnio widziana pozycja i czas od tamtej chwili. Boty skryptowy
+  i rozmyty korzystają z `_last_seen` we wspólnych zachowaniach, a bot RL bez pamięci dostawał same zera, gdy przeciwnik
+  schował się za przeszkodą, więc nie miał jak go szukać. Pamięć liczona jest wyłącznie z własnych obserwacji bota;
+- **pozostały czas meczu** (`Observation.time_left`): po upływie limitu wygrywa bot z większą liczbą HP, więc bez tej
+  informacji polityka nie mogła zaplanować końcówki (prowadzić albo się chronić).
+
+Zmiana rozmiaru obserwacji (61 → 66) unieważnia modele wytrenowane wcześniej.
 
 ## 7. Do zrobienia (stan na 31.10.2026)
 
