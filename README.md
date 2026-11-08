@@ -155,8 +155,8 @@ skrypt treningowy z `--arenas` zgodnym ze sceną (domyślnie 8), potem F6 w edyt
 1. Zainstaluj Godota 4.7.2 .NET, .NET SDK 8, Pythona 3.12 (z „Add to PATH”) i Gita.
 2. Sklonuj repo i przygotuj środowisko (PowerShell):
    ```
-   git clone https://github.com/kurliko/arena-duel.git
-   cd arena-duel
+   git clone https://github.com/kurliko/arena-duel-2.git
+   cd arena-duel-2
    python -m venv venv
    .\venv\Scripts\pip install -r requirements.txt
    dotnet build godot\ArenaDuel.csproj
