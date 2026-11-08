@@ -496,6 +496,43 @@ Zapisane dane: model `godot/models/rl_brain_9M.onnx`, ewaluacja `results/eval_ri
 `results/training_rigid_v3_9M.csv` (każda iteracja PPO: kroki, nagroda, długość epizodu, odsetek zwycięstw),
 logi TensorBoarda `results/rigid_v3_9M_tb.zip`.
 
+### Dotrenowanie rigid_v3_ext: +6 mln kroków, łącznie 15 mln (08.11.2026)
+
+Model po 9 mln kroków dotrenowany o 6 mln kroków (9,0 → 15,0 mln) z mieszanymi przeciwnikami: na 8 arenach jednocześnie
+4 ze skryptowym i 4 z rozmytym (`--curriculum scripted+fuzzy:6000000`, `--resume` z modelu 9M). Parametry PPO bez
+zmian. Czas: ok. 2 h 40 min (ok. 630 kroków/s).
+
+Odsetek zwycięstw w trakcie treningu (łącznie z obu przeciwników): 22% na starcie, 35% po 11 mln, 34–40% w zakresie
+12–15 mln kroków, 36% na końcu. Średnia nagroda za epizod wzrosła z 10,6 do ok. 13–15. Krzywa wypłaszczyła się po
+ok. 2 mln kroków dotrenowania, więc dalsze dotrenowanie w tej samej konfiguracji raczej niewiele by dało.
+
+Ewaluacja w grze, tym razem na większej próbie: **100 meczów na parę** (ziarno 41, zmiana stron co mecz, polityka
+stochastyczna). Na tych samych meczach oceniono też model 9M, żeby porównanie było uczciwe:
+
+| Przeciwnik | Model | Wynik RL (W:P:R) | Zwycięstwa RL (95% CI) | Celność RL / przeciwnika | Obrażenia otrzymane przez RL na mecz |
+|---|---|---|---|---|---|
+| losowy | 9M | 97:1:2 | 97% (92–99%) | 29% / 2% | 5 |
+| losowy | 15M | 96:0:4 | 96% (90–98%) | 25% / 2% | 5 |
+| skryptowy | 9M | 44:56:0 | 44% (35–54%) | 16% / 20% | 62 |
+| skryptowy | 15M | 45:54:1 | 45% (36–55%) | 18% / 18% | 58 |
+| rozmyty | 9M | 22:77:1 | 22% (15–31%) | 15% / 25% | 87 |
+| rozmyty | 15M | **39:61:0** | **39% (30–49%)** | 15% / 20% | 75 |
+
+Wnioski:
+- **Przeciw botowi rozmytemu wyraźna poprawa: z 22% do 39% zwycięstw.** Różnica jest istotna statystycznie
+  (test dwóch proporcji, z ≈ 2,6, p ≈ 0,01). Bot RL nie celuje lepiej (15% w obu modelach), ale rzadziej obrywa:
+  celność rozmytego przeciw niemu spadła z 25% do 20%, obrażenia otrzymane z 87 do 75 na mecz.
+- Przeciw skryptowemu bez zmian (44% → 45%). Ewaluacja na 10 meczach (3:7) zaniżała wynik modelu 9M: przy 100 meczach
+  było to 44%, czyli prawie remis.
+- Przeciw losowemu bez zmian (ok. 96–97%), więc trening z mieszanymi przeciwnikami nie spowodował zapominania.
+- Bot RL wciąż przegrywa minimalnie z oboma botami zaprojektowanymi ręcznie, ale z rozmytym dystans zmalał z ok. 1:3 do
+  ok. 2:3. Celność bota RL (15–18%) jest dużo niższa niż przeciw losowemu (25–29%), bo skryptowy i rozmyty
+  aktywnie unikają pocisków.
+
+Zapisane dane: model `godot/models/rl_brain.onnx` (15M, model domyślny w grze), ewaluacje
+`results/eval_rigid_v3_15M_100x3.csv` i `results/eval_rigid_v3_9M_100x3.csv` (po 300 meczów), przebieg treningu
+`results/training_rigid_v3_ext_15M.csv`, logi TensorBoarda `results/rigid_v3_ext_15M_tb.zip`.
+
 ## 7. Do zrobienia (stan na 31.10.2026)
 
 - reguły bota rozmytego związane z nową fizyką: gotowość celowania (błąd kąta i prędkość obrotu), pchnięcie
