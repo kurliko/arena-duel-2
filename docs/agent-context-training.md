@@ -39,8 +39,8 @@ Shell: PowerShell. Repo must be on a normal Windows drive path.
 ## Setup (run from the repo root)
 
 ```powershell
-git clone https://github.com/kurliko/arena-duel.git
-cd arena-duel
+git clone https://github.com/kurliko/arena-duel-2.git
+cd arena-duel-2
 python -m venv venv
 .\venv\Scripts\pip install -r requirements.txt   # torch is large; takes several minutes
 dotnet build godot\ArenaDuel.csproj               # builds OnnxRuntime glue for the plugin; must print 0 errors
