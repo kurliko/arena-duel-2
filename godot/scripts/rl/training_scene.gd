@@ -4,6 +4,8 @@ extends Node2D
 ## dla wszystkich aren naraz, a ten węzeł jest wspólnym zegarem decyzji.
 ##
 ## Argumenty użytkownika (po `--`): --arenas=N --opponent=random|scripted|fuzzy --seed=S --config=res://...
+## Kilku przeciwników naraz: --opponent=scripted+fuzzy (areny dostają ich na zmianę: 0 skryptowy, 1 rozmyty, 2 skryptowy...),
+## żeby bot nie zapominał jednego przeciwnika, ucząc się drugiego.
 ## Argument Godot RL Agents (przed `--`): --speedup=K (przyspieszenie symulacji przy stałym kroku fizyki).
 
 const MATCH_SCENE: PackedScene = preload("res://scenes/match.tscn")
@@ -12,8 +14,11 @@ const ARENA_SPACING: Vector2 = Vector2(1400.0, 900.0)
 const ARENA_COLUMNS: int = 4
 ## Ziarna kolejnych aren różnią się o tyle, żeby serie meczów się nie pokrywały.
 const SEED_STRIDE: int = 100000
+## Separator nazw przeciwników w --opponent.
+const OPPONENT_SEPARATOR: String = "+"
 
 @export var arena_count: int = 8
+## Nazwa mózgu przeciwnika albo kilka nazw oddzielonych OPPONENT_SEPARATOR.
 @export var opponent: String = BrainFactory.RANDOM
 @export var base_seed: int = 0
 @export var config: GameConfig = preload("res://data/configs/default.tres")
@@ -61,7 +66,8 @@ func _add_arena(index: int) -> void:
 	manager.read_command_line = false
 	manager.config = arena_config
 	manager.brain_a_name = BrainFactory.RL
-	manager.brain_b_name = opponent
+	var opponents: PackedStringArray = opponent.split(OPPONENT_SEPARATOR, false)
+	manager.brain_b_name = opponents[index % opponents.size()]
 	manager.external_clock = true
 	manager.quiet = true
 	match_root.position = Vector2(index % ARENA_COLUMNS, index / ARENA_COLUMNS) * ARENA_SPACING

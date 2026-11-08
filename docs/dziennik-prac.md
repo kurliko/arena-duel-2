@@ -461,6 +461,41 @@ Przed długim treningiem obserwacje bota RL uzupełniliśmy o dwie rzeczy, któr
 
 Zmiana rozmiaru obserwacji (61 → 66) unieważnia modele wytrenowane wcześniej.
 
+### Trening rigid_v3: 9 mln kroków (08.11.2026)
+
+Pierwszy długi trening z rozszerzoną obserwacją (66 wartości). Curriculum: losowy 3 mln, skryptowy 3 mln, rozmyty 3 mln
+kroków, 8 aren równolegle, PPO (sieć 128×128, `ent_coef` 0,005). Czas: ok. 4 h (600–960 kroków/s).
+
+Odsetek zwycięstw w trakcie treningu (`rollout/success_rate`, średnia z kolejnych odcinków etapu):
+
+| Etap | Początek | Koniec | Uwagi |
+|---|---|---|---|
+| losowy (0–3 mln) | 39% | 100% | opanowany po ok. 2 mln kroków |
+| skryptowy (3–6 mln) | 14% | 41% | krzywa wciąż rosła na końcu etapu |
+| rozmyty (6–9 mln) | 22% | ok. 25% | prawie płasko |
+
+Ewaluacja w grze (model ONNX, polityka stochastyczna, ziarno 41, 10 meczów na parę):
+
+| Przeciwnik | Wynik RL (W:P:R) | Celność RL | Trafienia RL / przeciwnika na mecz |
+|---|---|---|---|
+| losowy | 10:0:0 | 32% | 3,4 / 0,1 |
+| skryptowy | 3:7:0 | 15% | 2,9 / 2,1 |
+| rozmyty | 3:6:1 | 17% | 2,3 / 2,9 |
+
+Dla porównania model sprzed zmian (rigid_v2): 0:10 ze skryptowym, 1:8 z rozmytym, ok. 0,3 trafienia na mecz.
+10 meczów to mała próba (dla 3/10 przedział ufności 95% to ok. 11–60%), więc wiarygodniejszy jest odsetek zwycięstw
+z tysięcy meczów treningowych.
+
+Wnioski: bot RL nauczył się celować i trafiać, ale z rozmytym wygrywa ok. 1 mecz na 4. Bot rozmyty ma gotowe
+umiejętności (celowanie z wyprzedzeniem, hamowanie obrotu, omijanie przeszkód), a bot RL uczy się wszystkiego od zera
+na akcjach podstawowych. Krzywa przeciw skryptowemu nie zdążyła się wypłaszczyć, a etapy kolejno z jednym przeciwnikiem
+grożą zapominaniem poprzedniego. **Decyzja:** dotrenować ten sam model o kolejne 6 mln kroków z mieszanymi
+przeciwnikami (połowa aren ze skryptowym, połowa z rozmytym jednocześnie).
+
+Zapisane dane: model `godot/models/rl_brain_9M.onnx`, ewaluacja `results/eval_rigid_v3_9M.csv`, przebieg treningu
+`results/training_rigid_v3_9M.csv` (każda iteracja PPO: kroki, nagroda, długość epizodu, odsetek zwycięstw),
+logi TensorBoarda `results/rigid_v3_9M_tb.zip`.
+
 ## 7. Do zrobienia (stan na 31.10.2026)
 
 - reguły bota rozmytego związane z nową fizyką: gotowość celowania (błąd kąta i prędkość obrotu), pchnięcie
