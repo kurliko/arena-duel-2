@@ -60,7 +60,7 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--curriculum", default="random:300000,scripted:500000,fuzzy:500000",
-                        help="etapy przeciwnik:kroki oddzielone przecinkami")
+                        help="etapy przeciwnik:kroki oddzielone przecinkami; kilku przeciwników naraz: scripted+fuzzy:kroki")
     parser.add_argument("--run", default=time.strftime("run_%Y%m%d_%H%M"), help="nazwa przebiegu (katalog w training/runs)")
     parser.add_argument("--resume", type=Path, help="model .zip, od którego kontynuować")
     parser.add_argument("--arenas", type=int, default=8)
