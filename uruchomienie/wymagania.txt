@@ -1,0 +1,33 @@
+Arena Duel - wymagania
+
+System
+  Windows 10 albo 11 (projekt testowany na Windows 11)
+
+Oprogramowanie
+  Godot 4.7.2 stable, wersja .NET (mono), Windows 64-bit
+  .NET SDK 8.0 (do zbudowania czesci C# z OnnxRuntime)
+  Python 3.12 (tylko do treningu, analizy wynikow i pakowania; Python 3.13 nie zainstaluje numpy 1.26.4)
+
+Biblioteki .NET (pobierane automatycznie przez "dotnet build")
+  Microsoft.ML.OnnxRuntime 1.20.1
+
+Plugin Godota (dolaczony w kod/godot/addons/godot_rl_agents/)
+  godot_rl_agents, commit 998c357 (13.06.2026)
+
+Biblioteki Pythona (plik kod/requirements.txt, instalacja: pip install -r requirements.txt)
+  godot_rl==0.8.2
+  gymnasium==1.0.0
+  numpy==1.26.4
+  onnx==1.23.2
+  onnxruntime==1.31.1
+  stable_baselines3==2.4.0
+  tensorboard==2.21.0
+  torch==2.15.0
+  onnxscript==0.7.2
+  pandas==3.0.6
+  matplotlib==3.11.2
+  markdown (tylko do zbudowania instrukcji PDF)
+
+Sprzet
+  Demo i serie meczow: dowolny komputer z Windows.
+  Trening 15 mln krokow: ok. 6,5 h na laptopie z 16 watkami CPU (bez GPU).

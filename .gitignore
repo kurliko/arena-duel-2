@@ -33,3 +33,6 @@ godot/models/*.onnx.data
 
 # Przebiegi treningu RL (logi, checkpointy); wynikowe modele trafiają do godot/models
 training/runs/
+
+# Wyniki odtwarzane lokalnie skryptem uruchomienie/odtworz_wyniki.ps1
+results/odtworzone/
