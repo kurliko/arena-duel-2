@@ -2,8 +2,9 @@
 # z każdym przeciwnikiem (losowy, skryptowy, rozmyty), oraz pozostałe pary turnieju
 # (rozmyty, skryptowy, losowy, każdy z każdym), ziarno 41. Dziewięć serii działa równolegle
 # w trybie bez grafiki (ok. 15–30 min). Potem rysuje wykresy i tabele.
-# Wyniki: results\odtworzone\ (CSV, wykresy, tabele). Te same ziarna dają identyczne mecze,
+# Wyniki w: results\odtworzone\ (CSV, wykresy, tabele). Te same ziarna dają identyczne mecze,
 # więc tabele powinny być takie same jak w results\wykresy\.
+
 param(
     [int]$Matches = 100,
     [int]$Seed = 41
@@ -40,7 +41,7 @@ try {
     Write-Host "Trwa $($procs.Count) serii meczów..."
     $procs | Wait-Process
 
-    # Łączenie serii w pliki o tych samych nazwach co w results\.
+    # Przygotowanie plikow
     foreach ($tag in $Models.Keys) {
         $rows = foreach ($opp in $Opponents) { Import-Csv (Join-Path $Out "_${tag}_$opp.csv") }
         $rows | Export-Csv (Join-Path $Out "eval_rigid_v3_${tag}_100x3.csv") -NoTypeInformation -Encoding utf8

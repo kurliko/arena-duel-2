@@ -1,5 +1,5 @@
-﻿# Wspólne ustawienia skryptów uruchomieniowych: katalog z kodem i ścieżka do Godota.
-# W archiwum oddania kod leży w ..\kod, a w repozytorium w katalogu nadrzędnym.
+﻿# Plik pomocniczy dla odwtorz_wyniki.ps1 i wspolne.ps1.
+# Szuka folderu kod/ i pliku Godota
 
 $KodDir = Join-Path $PSScriptRoot "..\kod"
 if (-not (Test-Path (Join-Path $KodDir "godot\project.godot"))) {

@@ -14,7 +14,7 @@ Instrukcja dotyczy systemu Windows i PowerShella. Polecenia wpisuj w katalogu `k
    `Godot_v4.7.2-stable_mono_win64_console.exe` (to samo z konsolą; tego używamy w poleceniach).
 2. **.NET SDK 8.0** ze strony https://dotnet.microsoft.com/download/dotnet/8.0.
 3. **Python 3.12** ze strony https://www.python.org/downloads/ (zaznacz „Add python.exe to PATH”).
-   Python jest potrzebny tylko do treningu, wykresów i pakowania. Demo działa bez niego.
+   Python jest potrzebny tylko do treningu i wykresów. Demo działa bez niego.
 
 W poleceniach poniżej `GODOT` oznacza pełną ścieżkę do pliku `_console.exe`. Najwygodniej zapisać ją raz
 w zmiennej (w tym samym oknie PowerShella):
@@ -61,7 +61,7 @@ Ten sam mecz w edytorze Godota: uruchom `Godot_v4.7.2-stable_mono_win64.exe`, kl
 `Brain B Name`).
 
 Inne przykładowe scenariusze (bez rykoszetów, model po 9 mln kroków, polityka deterministyczna i inne) są opisane
-w `docs/scenariusze_testowe.md` (w archiwum też w `dane/scenariusze_testowe.md`).
+w pliku `scenariusze_testowe.md` w katalogu `kod/`.
 
 ## 4. Seria meczów bez grafiki i zapis wyników do CSV
 
@@ -152,19 +152,7 @@ Zamiast własnego etapu 1 można dotrenowywać dołączony model: `--resume trai
 - Przebieg treningu: `.\venv\Scripts\tensorboard --logdir training\runs`, potem http://localhost:6006.
   Logi z treningów z projektu są w `results/rigid_v3_9M_tb.zip` i `results/rigid_v3_ext_15M_tb.zip`.
 
-## 9. Pakowanie archiwum do oddania
-
-Z katalogu głównego repozytorium (wymaga Pythona i Gita):
-
-```
-.\venv\Scripts\python uruchomienie\pakuj_oddanie.py --zespol 3 --dzien pon --godzina 8 --prezentacja C:\sciezka\prezentacja.pdf --sprawozdanie C:\sciezka\sprawozdanie.pdf
-```
-
-Skrypt tworzy `projekt_<zespół>_<dzień>_<godzina>.zip` z jednym katalogiem głównym o tej samej nazwie i
-podkatalogami `kod/`, `dane/`, `modele/`, `wyniki/`, `uruchomienie/`. Do `kod/WERSJA.txt` wpisuje adres
-repozytorium i numer commita.
-
-## 10. Najczęstsze problemy
+## 9. Najczęstsze problemy
 
 | Objaw | Rozwiązanie |
 |---|---|

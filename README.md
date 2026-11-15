@@ -41,10 +41,8 @@ i 100% z losowym. Wykresy i tabele są w `results/wykresy/`.
 | `kod/` | kompletny kod projektu, czyli kopia repozytorium (bez plików tymczasowych i przebiegów treningu) |
 | `dane/` | dane wejściowe gry (reguły rozmyte, konfiguracje fizyki, układ areny, wagi nagród) i przykładowe scenariusze testowe |
 | `modele/` | wytrenowane modele bota RL: ONNX (do gry) i zip Stable-Baselines3 (do dalszego treningu) |
-| `wyniki/` | wykresy, tabele, zrzuty ekranu, surowe wyniki meczów (CSV) i logi TensorBoarda |
+| `wyniki/` | wykresy, tabele, surowe wyniki meczów (CSV) i logi TensorBoarda |
 | `uruchomienie/` | `instrukcja_uruchomienia.pdf`, `wymagania.txt` i skrypty uruchamiające demo i ewaluację |
-
-Archiwum tworzy skrypt `uruchomienie/pakuj_oddanie.py` (opis na końcu instrukcji uruchomienia).
 
 ### Repozytorium (katalog `kod/` w archiwum)
 
@@ -59,9 +57,9 @@ Archiwum tworzy skrypt `uruchomienie/pakuj_oddanie.py` (opis na końcu instrukcj
 | `godot/scripts/stats/` | statystyki meczów i zapis CSV |
 | `training/` | trening PPO (`train_rl.py`), eksport ONNX, modele SB3 (`models/`) |
 | `analysis/` | wykresy i tabele z wyników (`wykresy.py`) |
-| `results/` | surowe wyniki (CSV), logi TensorBoarda (zip), `wykresy/`, `zrzuty/` |
-| `uruchomienie/` | instrukcja uruchomienia, wymagania, skrypty demo, ewaluacji i pakowania |
-| `docs/` | dziennik prac i decyzje projektowe (`dziennik-prac.md`), założenia projektu (`project-context.md`), scenariusze testowe |
+| `results/` | surowe wyniki (CSV), logi TensorBoarda (zip), wykresy i tabele (`wykresy/`) |
+| `uruchomienie/` | instrukcja uruchomienia, wymagania, skrypty demo i odtwarzania wyników |
+| `scenariusze_testowe.md` | przykładowe scenariusze testowe z poleceniami do uruchomienia |
 
 ## Środowisko i wersje
 
@@ -128,12 +126,11 @@ a ruch liczy silnik fizyki przy stałym kroku 60 Hz.
 - **Linia wzroku**: raycast; przeszkody i skrzynie zasłaniają przeciwnika i pociski.
 
 Parametry fizyki są w `godot/data/configs/default.tres` (wersja bez rykoszetów: `no_ricochet.tres`).
-Szczegóły i wzory: `docs/dziennik-prac.md`, rozdział 4.
+Szczegóły i wzory są w sprawozdaniu (`sprawozdanie.pdf`).
 
 ## Repozytorium
 
-https://github.com/kurliko/arena-duel-2 (gałąź `main`). Oceniana wersja (numer commita) jest w pliku `kod/WERSJA.txt`
-w archiwum.
+https://github.com/kurliko/arena-duel-2 (gałąź `main`).
 
 ## Gotowe narzędzia a własny wkład
 
@@ -202,7 +199,7 @@ Kod po stronie gry w `godot/scripts/rl/`, trening w `training/train_rl.py`.
 .\venv\Scripts\python training\train_rl.py --curriculum random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
 ```
 - `--arenas`: liczba równoległych aren w jednej instancji gry, `--speedup`: przyspieszenie symulacji (domyślnie 8),
-  `--resume model.zip`: kontynuacja treningu.
+  `--resume model.zip`: kontynuacja treningu (z tą samą liczbą aren co zapisany model; modele z projektu mają 8).
 - Przeciwnicy mieszani na arenach: `scripted+fuzzy` (połowa aren z każdym), np. dotrenowanie użyte w projekcie:
   `--resume training\models\rl_brain_9M_sb3.zip --curriculum scripted+fuzzy:6000000 --arenas 8 --seed 7 --run rigid_v3_ext`.
 - Skrypt szuka Godota w `C:\Tools\Godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64\`;
@@ -223,15 +220,3 @@ skrypt treningowy z `--arenas` zgodnym ze sceną (domyślnie 8), potem F6 w edyt
 | `godot/models/rl_brain.onnx` | model domyślny w grze: 15 mln kroków (curriculum 9 mln + dotrenowanie 6 mln z mieszanymi przeciwnikami) |
 | `godot/models/rl_brain_9M.onnx` | model po 9 mln kroków (do porównania) |
 | `training/models/rl_brain_15M_sb3.zip`, `rl_brain_9M_sb3.zip` | te same modele w formacie Stable-Baselines3 (do `--resume`) |
-| `godot/models/smoke_test.onnx` | model ze smoke testu Godot RL Agents |
-
-## Smoke test Godot RL Agents
-
-Sprawdza cały łańcuch: gra łączy się z Pythonem, PPO się uczy, polityka trafia do ONNX i gra wczytuje ją z powrotem.
-```
-.\venv\Scripts\python training\smoke_train.py --timesteps 20000
-```
-Potem w edytorze scena `res://smoke_test/smoke_test.tscn` i **F6**. Inferencja bez Pythona:
-```
-& GODOT --headless --fixed-fps 60 --path godot res://smoke_test/smoke_test.tscn --quit-after 3000 -- --onnx=res://models/smoke_test.onnx
-```

@@ -1,10 +1,10 @@
-"""Wykresy i tabele z wyników treningu i ewaluacji bota RL.
+# Wykresy i tabele z wyników treningu i ewaluacji bota RL.
 
-Czyta pliki CSV z katalogu results/ i zapisuje wykresy PNG oraz tabele (CSV i Markdown)
-do results/wykresy/. Uruchomienie z katalogu repozytorium:
+# Czyta pliki CSV z katalogu results/ i zapisuje wykresy PNG oraz tabele (CSV i Markdown)
+# do results/wykresy/. Uruchomienie z katalogu repozytorium:
 
-    .\\venv\\Scripts\\python analysis\\wykresy.py
-"""
+#     .\\venv\\Scripts\\python analysis\\wykresy.py
+
 from __future__ import annotations
 
 import argparse
@@ -22,7 +22,7 @@ RESULTS = ROOT / "results"
 OUT = RESULTS / "wykresy"
 EVAL_DIR = RESULTS
 
-# Pliki z przebiegiem treningu (każdy wiersz to jedna iteracja PPO).
+# Pliki z przebiegiem treningu.
 TRAINING_FILES = ["training_rigid_v3_9M.csv", "training_rigid_v3_ext_15M.csv"]
 # Ewaluacje po 100 meczów na przeciwnika; klucz to etykieta modelu.
 EVAL_FILES = {"9M": "eval_rigid_v3_9M_100x3.csv", "15M": "eval_rigid_v3_15M_100x3.csv"}

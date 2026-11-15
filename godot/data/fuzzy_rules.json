@@ -1,5 +1,5 @@
 {
-  "description": "Baza reguł FuzzyBrain. Wejścia liczone z Observation, wyjścia to opłacalność zachowań (0..1). Zbiory: 3 punkty = trójkąt, 4 punkty = trapez.",
+  "description": "Baza reguł rozmytych. Wejścia liczone z Observation, wyjścia to opłacalność zachowań (0..1). Zbiory: 3 punkty = trójkąt, 4 punkty = trapez.",
   "inputs": {
     "distance": {
       "range": [

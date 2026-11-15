@@ -4,7 +4,7 @@ Każdy scenariusz uruchamia się z katalogu `kod/` (w repozytorium: z katalogu g
 `Godot_v4.7.2-stable_mono_win64_console.exe`. Żaden scenariusz nie wymaga treningu: bot RL używa gotowego modelu
 `godot/models/rl_brain.onnx`. Ten sam seed daje zawsze te same mecze.
 
-| Nr | Scenariusz | Polecenie (argumenty po `--`) | Czego się spodziewać |
+| Nr | Scenariusz | Polecenie (argumenty po `--`) | Oczekiwany wynik |
 |---|---|---|---|
 | 1 | Demo z grafiką: RL kontra rozmyty | `& GODOT --path godot -- --brain-a=rl --brain-b=fuzzy --seed=41` | okno gry, HUD z HP, amunicją i decyzjami bota rozmytego |
 | 2 | Rozmyty kontra skryptowy | `& GODOT --path godot -- --brain-a=fuzzy --brain-b=scripted` | mecz dwóch botów projektowanych ręcznie |
