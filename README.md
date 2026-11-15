@@ -9,9 +9,9 @@ temat 1: „Pojedynek na arenie: dwa boty, dwie strategie”.
 
 | Osoba | Za co odpowiadała |
 |---|---|
-| Filip Opacki | [DO UZUPEŁNIENIA] |
-| Zofia Jedlińska | [DO UZUPEŁNIENIA] |
-| Julia Szymczycha | [DO UZUPEŁNIENIA] |
+| Filip Opacki | propozycja zmiany silnika z Unreal Engine na Godot; implementacja gry: arena i fizyka ciał sztywnych, postacie, pociski, skrzynie i pakiety, bot skryptowy, silnik logiki rozmytej i bot rozmyty, środowisko uczenia bota RL |
+| Zofia Jedlińska | faza testów: trening i ewaluacja bota RL (modele 9M i 15M), turniej botów, zebranie danych porównawczych, przygotowanie materiałów do oddania |
+| Julia Szymczycha | sprawozdanie, analiza porównawcza wyników, prezentacja projektu |
 
 ## Cel projektu
 
