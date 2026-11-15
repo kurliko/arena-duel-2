@@ -96,15 +96,17 @@ Kod wyjścia 0 oznacza, że wszystkie testy przeszły.
 
 ## 6. Odtworzenie wyników z prezentacji
 
-Wyniki ewaluacji (modele po 9 i 15 mln kroków, po 100 meczów z każdym przeciwnikiem, ziarno 41) odtwarza skrypt:
+Wszystkie wyniki meczów z prezentacji (ziarno 41, 100 meczów na parę) odtwarza jeden skrypt: ewaluację bota RL
+(modele po 9 i 15 mln kroków przeciw botom losowemu, skryptowemu i rozmytemu) oraz pozostałe pary turnieju każdy
+z każdym (rozmyty, skryptowy, losowy):
 
 ```
 powershell -ExecutionPolicy Bypass -File ..\uruchomienie\odtworz_wyniki.ps1
 ```
 
-Skrypt uruchamia 6 serii meczów równolegle (ok. 15–30 minut), zapisuje CSV w `results/odtworzone/` i rysuje
-wykresy i tabele (wymaga środowiska Pythona z punktu 7). Te same ziarna dają te same mecze, więc tabela
-`results/odtworzone/tabela_ewaluacji.csv` powinna być identyczna z `results/wykresy/tabela_ewaluacji.csv`.
+Skrypt uruchamia 9 serii meczów równolegle (ok. 15–30 minut), zapisuje CSV w `results/odtworzone/` i rysuje
+wykresy i tabele (wymaga środowiska Pythona z punktu 7). Te same ziarna dają te same mecze, więc tabele
+w `results/odtworzone/` powinny być identyczne z tymi w `results/wykresy/`.
 
 Same wykresy z dołączonych wyników:
 
@@ -112,8 +114,9 @@ Same wykresy z dołączonych wyników:
 .\venv\Scripts\python analysis\wykresy.py
 ```
 
-Tworzy w `results/wykresy/`: krzywą uczenia (`krzywa_uczenia.png`), porównanie modeli (`wygrane_rl_9M_15M.png`)
-i tabelę ewaluacji (`tabela_ewaluacji.csv`, `.md`).
+Tworzy w `results/wykresy/`: krzywą uczenia (`krzywa_uczenia.png`), porównanie modeli (`wygrane_rl_9M_15M.png`),
+macierz turnieju (`turniej_macierz.png`, `.csv`) oraz tabele ewaluacji i turnieju (`tabela_ewaluacji.*`,
+`tabela_turnieju.*`) z celnością, zużyciem amunicji i otrzymanymi obrażeniami.
 
 ## 7. Środowisko Pythona
 

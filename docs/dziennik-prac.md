@@ -533,6 +533,38 @@ Zapisane dane: model `godot/models/rl_brain.onnx` (15M, model domyślny w grze),
 `results/eval_rigid_v3_15M_100x3.csv` i `results/eval_rigid_v3_9M_100x3.csv` (po 300 meczów), przebieg treningu
 `results/training_rigid_v3_ext_15M.csv`, logi TensorBoarda `results/rigid_v3_ext_15M_tb.zip`.
 
+### Turniej każdy z każdym (15.11.2026)
+
+Brakujące pary (rozmyty, skryptowy i losowy między sobą) rozegraliśmy na tych samych zasadach co ewaluację bota RL:
+100 meczów na parę, ziarno 41, zmiana stron co mecz, konfiguracja `default.tres`. Pary z botem RL pochodzą z ewaluacji
+modelu po 15 mln kroków. Dane: `results/turniej_bez_rl_100.csv`, tabele i macierz: `results/wykresy/tabela_turnieju.*`,
+`turniej_macierz.*`.
+
+Odsetek zwycięstw bota z wiersza nad botem z kolumny:
+
+| Bot \ przeciwnik | RL (15M) | rozmyty | skryptowy | losowy |
+|---|---|---|---|---|
+| RL (15M) | – | 39% | 45% | 96% |
+| rozmyty | 61% | – | 45% | 100% |
+| skryptowy | 54% | 55% | – | 100% |
+| losowy | 0% | 0% | 0% | – |
+
+Statystyki par bez bota RL:
+
+| Para (W:P:R) | Celność | Zużyta amunicja na mecz | Otrzymane obrażenia na mecz | Mecze zakończone śmiercią |
+|---|---|---|---|---|
+| rozmyty – skryptowy (45:55:0) | 14% / 15% | 16,0 / 14,6 | 66,5 / 61,5 | 22 |
+| rozmyty – losowy (100:0:0) | 37% / 0,4% | 11,1 / 5,3 | 2,0 / 98,4 | 88 |
+| skryptowy – losowy (100:0:0) | 37% / 0% | 11,1 / 5,1 | 3,0 / 97,3 | 88 |
+
+Wnioski:
+- Trzy boty grające celowo są blisko siebie. Skryptowy wygrywa minimalnie z oboma (55% z rozmytym, 54% z RL), ale
+  przy 100 meczach 95% przedział ufności dla 45% to ok. 36–55%, więc różnica rozmyty–skryptowy nie jest istotna.
+- Bot losowy przegrywa wszystko; boty rozmyty i skryptowy wygrywają z nim 100:0, bot RL 96:0 (4 remisy).
+- Mecze rozmytego ze skryptowym rzadko kończą się śmiercią (22 na 100): oba boty robią uniki i chowają się za
+  osłonami, więc o wyniku zwykle decyduje HP po upływie czasu.
+- Bot RL zużywa najwięcej amunicji (ok. 17 na mecz przeciw 12–14 u botów ręcznych) przy podobnej celności.
+
 ## 7. Do zrobienia (stan na 31.10.2026)
 
 - reguły bota rozmytego związane z nową fizyką: gotowość celowania (błąd kąta i prędkość obrotu), pchnięcie

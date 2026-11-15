@@ -1,5 +1,6 @@
-﻿# Odtwarza ewaluację bota RL z prezentacji: modele po 9 i 15 mln kroków, po 100 meczów
-# z każdym przeciwnikiem (losowy, skryptowy, rozmyty), ziarno 41. Sześć serii działa równolegle
+﻿# Odtwarza wyniki z prezentacji: modele bota RL po 9 i 15 mln kroków, po 100 meczów
+# z każdym przeciwnikiem (losowy, skryptowy, rozmyty), oraz pozostałe pary turnieju
+# (rozmyty, skryptowy, losowy, każdy z każdym), ziarno 41. Dziewięć serii działa równolegle
 # w trybie bez grafiki (ok. 15–30 min). Potem rysuje wykresy i tabele.
 # Wyniki: results\odtworzone\ (CSV, wykresy, tabele). Te same ziarna dają identyczne mecze,
 # więc tabele powinny być takie same jak w results\wykresy\.
@@ -26,14 +27,26 @@ try {
                 -RedirectStandardOutput (Join-Path $Out "_${tag}_$opp.log") -RedirectStandardError (Join-Path $Out "_${tag}_$opp.err")
         }
     }
+    # Pozostałe pary turnieju każdy z każdym (bez bota RL).
+    $Pairs = @("fuzzy_scripted", "fuzzy_random", "scripted_random")
+    foreach ($pair in $Pairs) {
+        $a, $b = $pair.Split("_")
+        $csv = "results/odtworzone/_t_$pair.csv"
+        Remove-Item (Join-Path $KodDir $csv) -ErrorAction SilentlyContinue
+        $argList = "--headless --fixed-fps 60 --path godot -- --matches=$Matches --brain-a=$a --brain-b=$b --seed=$Seed --quiet=1 --csv=$csv"
+        $procs += Start-Process -FilePath $Godot -ArgumentList $argList -NoNewWindow -PassThru `
+            -RedirectStandardOutput (Join-Path $Out "_t_$pair.log") -RedirectStandardError (Join-Path $Out "_t_$pair.err")
+    }
     Write-Host "Trwa $($procs.Count) serii meczów..."
     $procs | Wait-Process
 
-    # Łączenie serii w jeden plik na model (nazwy jak w results\).
+    # Łączenie serii w pliki o tych samych nazwach co w results\.
     foreach ($tag in $Models.Keys) {
         $rows = foreach ($opp in $Opponents) { Import-Csv (Join-Path $Out "_${tag}_$opp.csv") }
         $rows | Export-Csv (Join-Path $Out "eval_rigid_v3_${tag}_100x3.csv") -NoTypeInformation -Encoding utf8
     }
+    $rows = foreach ($pair in $Pairs) { Import-Csv (Join-Path $Out "_t_$pair.csv") }
+    $rows | Export-Csv (Join-Path $Out "turniej_bez_rl_100.csv") -NoTypeInformation -Encoding utf8
     Remove-Item (Join-Path $Out "_*") -ErrorAction SilentlyContinue
 
     $Python = Join-Path $KodDir "venv\Scripts\python.exe"

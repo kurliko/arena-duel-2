@@ -129,6 +129,74 @@ def win_rate_chart(table: pd.DataFrame) -> None:
     plt.close(fig)
 
 
+# Turniej każdy z każdym: pary bez bota RL z osobnego pliku, pary z botem RL z ewaluacji modelu 15M.
+TOURNAMENT_FILE = "turniej_bez_rl_100.csv"
+BRAINS = ["rl", "fuzzy", "scripted", "random"]
+BRAIN_LABELS = {"rl": "RL (15M)", "fuzzy": "rozmyty", "scripted": "skryptowy", "random": "losowy"}
+
+
+def _pair_stats(d: pd.DataFrame, a: str, b: str) -> dict:
+    """Statystyki pary, gdzie a grał jako bot A, a b jako bot B."""
+    n = len(d)
+    wins_a = int((d["winner"] == "A").sum())
+    wins_b = int((d["winner"] == "B").sum())
+    low, high = wilson(wins_a, n)
+    return {
+        "bot_1": BRAIN_LABELS[a], "bot_2": BRAIN_LABELS[b], "mecze": n,
+        "wygrane_1": wins_a, "wygrane_2": wins_b, "remisy": n - wins_a - wins_b,
+        "odsetek_wygranych_1": round(wins_a / n, 3), "ci95_dol": round(low, 3), "ci95_gora": round(high, 3),
+        "celnosc_1": round(d["hits_a"].sum() / max(d["shots_a"].sum(), 1), 3),
+        "celnosc_2": round(d["hits_b"].sum() / max(d["shots_b"].sum(), 1), 3),
+        "zuzyta_amunicja_1": round(d["ammo_used_a"].mean(), 1),
+        "zuzyta_amunicja_2": round(d["ammo_used_b"].mean(), 1),
+        "obrazenia_otrzymane_1": round(d["damage_taken_a"].mean(), 1),
+        "obrazenia_otrzymane_2": round(d["damage_taken_b"].mean(), 1),
+        "mecze_do_smierci": int((d["reason"] == "death").sum()),
+    }
+
+
+def tournament() -> pd.DataFrame | None:
+    path = EVAL_DIR / TOURNAMENT_FILE
+    if not path.exists():
+        return None
+    games = [pd.read_csv(path), pd.read_csv(EVAL_DIR / EVAL_FILES["15M"])]
+    data = pd.concat(games)
+    rows = [_pair_stats(g, a, b) for (a, b), g in data.groupby(["brain_a", "brain_b"])]
+    table = pd.DataFrame(rows)
+    order = {BRAIN_LABELS[b]: i for i, b in enumerate(BRAINS)}
+    table = table.sort_values(by=["bot_1", "bot_2"], key=lambda s: s.map(order)).reset_index(drop=True)
+
+    # Macierz: odsetek zwycięstw bota z wiersza nad botem z kolumny.
+    labels = [BRAIN_LABELS[b] for b in BRAINS]
+    matrix = pd.DataFrame(index=labels, columns=labels, dtype=float)
+    for r in table.itertuples(index=False):
+        matrix.loc[r.bot_1, r.bot_2] = r.wygrane_1 / r.mecze
+        matrix.loc[r.bot_2, r.bot_1] = r.wygrane_2 / r.mecze
+
+    fig, ax = plt.subplots(figsize=(7.5, 6))
+    values = matrix.to_numpy(dtype=float)
+    image = ax.imshow(values * 100, cmap="PuBu", vmin=0, vmax=100)
+    for i in range(len(labels)):
+        for j in range(len(labels)):
+            if i == j:
+                ax.text(j, i, "–", ha="center", va="center", color="#666666")
+            else:
+                v = values[i, j] * 100
+                ax.text(j, i, f"{v:.0f}%", ha="center", va="center", fontsize=12,
+                        color="white" if v > 55 else "#1b1b24")
+    ax.set_xticks(range(len(labels)), labels)
+    ax.set_yticks(range(len(labels)), labels)
+    ax.set_xlabel("przeciwnik")
+    ax.set_ylabel("bot")
+    ax.set_title("Turniej: odsetek zwycięstw bota (wiersz) nad przeciwnikiem (kolumna)\n100 meczów na parę, reszta do 100% to remisy i porażki", fontsize=10)
+    fig.colorbar(image, ax=ax, label="zwycięstwa [%]")
+    fig.tight_layout()
+    fig.savefig(OUT / "turniej_macierz.png", dpi=150)
+    plt.close(fig)
+    (matrix * 100).round(0).to_csv(OUT / "turniej_macierz.csv")
+    return table
+
+
 def main() -> None:
     global OUT, EVAL_DIR
     parser = argparse.ArgumentParser(description=__doc__)
@@ -144,6 +212,10 @@ def main() -> None:
     (OUT / "tabela_ewaluacji.md").write_text(table.to_markdown(index=False) if _has_tabulate() else _md(table),
                                             encoding="utf-8")
     win_rate_chart(table)
+    pairs = tournament()
+    if pairs is not None:
+        pairs.to_csv(OUT / "tabela_turnieju.csv", index=False)
+        (OUT / "tabela_turnieju.md").write_text(_md(pairs), encoding="utf-8")
     print(f"Zapisano wykresy i tabele w {OUT}")
 
 

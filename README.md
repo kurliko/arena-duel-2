@@ -25,8 +25,9 @@ Oba boty sterują tą samą postacią (to samo życie, broń i fizyka) i widzą 
 wyłącznie algorytmem decyzji. Celem jest porównanie obu metod: odsetek zwycięstw, zużycie amunicji, otrzymane
 obrażenia i skuteczność przeciw różnym przeciwnikom (losowemu i skryptowemu, czyli prostej maszynie stanów).
 
-Najważniejsze wyniki (100 meczów na parę, ziarno 41): bot RL po 15 mln kroków treningu wygrywa 96% meczów z botem
-losowym, 45% ze skryptowym i 39% z rozmytym. Wykresy i tabele są w `results/wykresy/`.
+Najważniejsze wyniki (turniej każdy z każdym, 100 meczów na parę, ziarno 41): bot RL po 15 mln kroków treningu
+wygrywa 96% meczów z botem losowym, 45% ze skryptowym i 39% z rozmytym. Bot rozmyty wygrywa 45% meczów ze skryptowym
+i 100% z losowym. Wykresy i tabele są w `results/wykresy/`.
 
 ## Zawartość katalogów
 
