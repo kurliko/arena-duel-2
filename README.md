@@ -3,7 +3,7 @@
 Projekt nr 1 z przedmiotu *Sztuczna inteligencja w grach i rozszerzonej rzeczywistości*,
 temat 1: „Pojedynek na arenie: dwa boty, dwie strategie”.
 
-**Zespół nr [NR ZESPOŁU], termin zajęć: [DZIEŃ] [GODZINA]**
+**Zespół nr 1, termin zajęć: poniedziałek 10:30**
 
 ## Skład zespołu i podział prac
 
@@ -31,7 +31,7 @@ i 100% z losowym. Wykresy i tabele są w `results/wykresy/`.
 
 ## Zawartość katalogów
 
-### Archiwum oddania (`projekt_<zespół>_<dzień>_<godzina>.zip`)
+### Archiwum oddania (`projekt_1_pon_10.30.zip`)
 
 | Katalog / plik | Zawartość |
 |---|---|
