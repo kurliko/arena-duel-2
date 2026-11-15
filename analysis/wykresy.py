@@ -69,7 +69,7 @@ def learning_curve() -> None:
     axes[1].plot(curve["steps"] / 1e6, curve["reward"], color="#7C3AED", linewidth=2)
     axes[1].set_ylabel("średnia nagroda w epizodzie")
     axes[1].set_xlabel("kroki treningu [mln]")
-    axes[0].set_title("Trening bota RL: curriculum (0–9 mln) i dotrenowanie (9–15 mln)", pad=22)
+    axes[0].set_title("Trening bota RL: trzy etapy z kolejnymi przeciwnikami (0–9 mln) i dotrenowanie (9–15 mln)", pad=22)
     fig.tight_layout()
     fig.savefig(OUT / "krzywa_uczenia.png", dpi=150)
     plt.close(fig)

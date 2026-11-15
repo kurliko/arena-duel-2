@@ -1,5 +1,6 @@
 System
   Windows 10 albo 11 (projekt testowany na Windows 11)
+  macOS albo Linux powinny dzialac (nietestowane; polecenia w instrukcji uruchomienia, punkt 9)
 
 Oprogramowanie
   Godot 4.7.2 stable, wersja .NET (mono), Windows 64-bit

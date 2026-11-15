@@ -1,6 +1,6 @@
 extends Node2D
 ## Scena treningowa bota RL: wiele niezależnych aren (kopie scenes/match.tscn przesunięte w przestrzeni),
-## w każdej bot RL (A) kontra przeciwnik z curriculum (B). Jeden wspólny ArenaSync wymienia dane z Pythonem
+## w każdej bot RL (A) kontra przeciwnik z bieżącego etapu treningu (B). Jeden wspólny ArenaSync wymienia dane z Pythonem
 ## dla wszystkich aren naraz, a ten węzeł jest wspólnym zegarem decyzji.
 ##
 ## Argumenty użytkownika (po `--`): --arenas=N --opponent=random|scripted|fuzzy --seed=S --config=res://...

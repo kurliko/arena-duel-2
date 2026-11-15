@@ -1,11 +1,3 @@
-# Arena Duel: instrukcja uruchomienia
-
-Projekt nr 1, temat „Pojedynek na arenie: dwa boty, dwie strategie”.
-Zespół: Filip Opacki, Zofia Jedlińska, Julia Szymczycha.
-
-Instrukcja dotyczy systemu Windows i PowerShella. Polecenia wpisuj w katalogu `kod/` z archiwum
-(w repozytorium: w katalogu głównym repozytorium), chyba że napisano inaczej.
-
 ## 1. Instalacja
 
 1. **Godot 4.7.2 .NET** (Windows 64-bit) ze strony https://godotengine.org/download/archive/
@@ -130,16 +122,16 @@ python -m venv venv
 Trening nie jest potrzebny do demo ani do odtworzenia wyników, bo wytrenowane modele są dołączone. Pełny trening
 z projektu trwał ok. 6,5 h na laptopie z 16 wątkami CPU.
 
-Etap 1: curriculum, 9 mln kroków (przeciwnik losowy, skryptowy, rozmyty, po 3 mln):
+Etap 1: trening etapami, 9 mln kroków (przeciwnik losowy, skryptowy, rozmyty, po 3 mln):
 
 ```
-.\venv\Scripts\python training\train_rl.py --curriculum random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
+.\venv\Scripts\python training\train_rl.py --etapy random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
 ```
 
 Etap 2: dotrenowanie o 6 mln kroków z przeciwnikami mieszanymi na arenach (połowa skryptowy, połowa rozmyty):
 
 ```
-.\venv\Scripts\python training\train_rl.py --resume training\runs\rigid_v3\stage2_fuzzy.zip --curriculum scripted+fuzzy:6000000 --arenas 8 --seed 7 --run rigid_v3_ext
+.\venv\Scripts\python training\train_rl.py --resume training\runs\rigid_v3\stage2_fuzzy.zip --etapy scripted+fuzzy:6000000 --arenas 8 --seed 7 --run rigid_v3_ext
 ```
 
 Zamiast własnego etapu 1 można dotrenowywać dołączony model: `--resume training\models\rl_brain_9M_sb3.zip`.
@@ -152,11 +144,88 @@ Zamiast własnego etapu 1 można dotrenowywać dołączony model: `--resume trai
 - Przebieg treningu: `.\venv\Scripts\tensorboard --logdir training\runs`, potem http://localhost:6006.
   Logi z treningów z projektu są w `results/rigid_v3_9M_tb.zip` i `results/rigid_v3_ext_15M_tb.zip`.
 
-## 9. Najczęstsze problemy
+## 9. macOS i Linux
 
-| Objaw | Rozwiązanie |
-|---|---|
-| „running scripts is disabled on this system” | uruchamiaj skrypty przez `powershell -ExecutionPolicy Bypass -File ...` |
-| bot RL stoi w miejscu albo błąd ładowania ONNX | brakuje `dotnet build godot\ArenaDuel.csproj` albo użyto Godota bez .NET |
-| błąd instalacji `numpy` | użyj Pythona 3.12, nie 3.13 |
-| skrypt nie znajduje Godota | ustaw `$env:GODOT_BIN` na pełną ścieżkę do `_console.exe` |
+Projekt testowaliśmy tylko na Windows 11, ale umieszczamy tutaj tez instrukcje, które powinny zadziałać na macOS i Linux. Kod gry, trening i analiza nie zależą od systemu, a Godot .NET,
+.NET SDK 8, OnnxRuntime i biblioteki Pythona są dostępne także na macOS i Linuksie, więc projekt powinien działać
+również tam. Skrypty `demo.ps1` i `odtworz_wyniki.ps1` są pisane dla PowerShella na Windows, dlatego na macOS
+i Linuksie polecenia wpisuje się ręcznie w terminalu (bash albo zsh), jak niżej.
+
+**Instalacja**
+
+1. Godot 4.7.2 .NET ze strony https://godotengine.org/download/archive/ (wersja „.NET”):
+   - macOS: `Godot_v4.7.2-stable_mono_macos.universal.zip` (działa na procesorach Intel i Apple M).
+     Rozpakuj i przenieś `Godot_mono.app` do `Applications`. Przy pierwszym uruchomieniu macOS może
+     zablokować aplikację z nieznanego źródła: otwórz ją prawym przyciskiem myszy i wybierz „Otwórz”.
+   - Linux: `Godot_v4.7.2-stable_mono_linux_x86_64.zip`. Rozpakuj, np. do `~/Godot/`.
+2. .NET SDK 8.0 ze strony https://dotnet.microsoft.com/download/dotnet/8.0 (na Linuksie także z menedżera
+   pakietów dystrybucji, np. `sudo apt install dotnet-sdk-8.0`).
+3. Python 3.12 (tylko do treningu i wykresów): na macOS np. ze strony https://www.python.org/downloads/,
+   na Linuksie z menedżera pakietów.
+
+**Ścieżka do Godota** (w tym samym oknie terminala, w katalogu `kod/`):
+
+```
+# macOS
+export GODOT_BIN=/Applications/Godot_mono.app/Contents/MacOS/Godot
+# Linux (nazwa pliku zależy od rozpakowanego archiwum)
+export GODOT_BIN=~/Godot/Godot_v4.7.2-stable_mono_linux_x86_64/Godot_v4.7.2-stable_mono_linux.x86_64
+```
+
+**Przygotowanie projektu (raz)**
+
+```
+dotnet build godot/ArenaDuel.csproj
+"$GODOT_BIN" --headless --path godot --import
+```
+
+**Demo z grafiką**
+
+```
+"$GODOT_BIN" --path godot -- --brain-a=rl --brain-b=fuzzy --seed=41
+```
+
+**Seria meczów bez grafiki i testy**
+
+```
+"$GODOT_BIN" --headless --fixed-fps 60 --path godot -- --matches=20 --brain-a=rl --brain-b=fuzzy --seed=41 --quiet=1 --csv=results/rl_vs_fuzzy.csv
+"$GODOT_BIN" --headless --path godot --script res://tests/test_fuzzy.gd
+```
+
+Argumenty po `--` są takie same jak w punkcie 4.
+
+**Środowisko Pythona**
+
+```
+python3.12 -m venv venv
+venv/bin/pip install -r requirements.txt
+```
+
+**Odtworzenie wyników z prezentacji** (zamiast `odtworz_wyniki.ps1`; serie meczów idą po kolei, a nie
+równolegle, więc trwa to dłużej niż na Windows):
+
+```
+mkdir -p results/odtworzone
+for opp in random scripted fuzzy; do
+  "$GODOT_BIN" --headless --fixed-fps 60 --path godot -- --matches=100 --brain-a=rl --brain-b=$opp --seed=41 --quiet=1 --rl-model=res://models/rl_brain.onnx --csv=results/odtworzone/eval_rigid_v3_15M_100x3.csv
+  "$GODOT_BIN" --headless --fixed-fps 60 --path godot -- --matches=100 --brain-a=rl --brain-b=$opp --seed=41 --quiet=1 --rl-model=res://models/rl_brain_9M.onnx --csv=results/odtworzone/eval_rigid_v3_9M_100x3.csv
+done
+for pair in fuzzy:scripted fuzzy:random scripted:random; do
+  a=${pair%%:*}; b=${pair##*:}
+  "$GODOT_BIN" --headless --fixed-fps 60 --path godot -- --matches=100 --brain-a=$a --brain-b=$b --seed=41 --quiet=1 --csv=results/odtworzone/turniej_bez_rl_100.csv
+done
+venv/bin/python analysis/wykresy.py --eval-dir results/odtworzone --out results/odtworzone
+```
+
+**Wykresy z dołączonych wyników**
+
+```
+venv/bin/python analysis/wykresy.py
+```
+
+**Trening** (skrypt sam uruchamia Godota ze zmiennej `GODOT_BIN`):
+
+```
+venv/bin/python training/train_rl.py --etapy random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
+venv/bin/python training/train_rl.py --resume training/models/rl_brain_9M_sb3.zip --etapy scripted+fuzzy:6000000 --arenas 8 --seed 7 --run rigid_v3_ext
+```

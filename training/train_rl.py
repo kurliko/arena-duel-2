@@ -1,10 +1,10 @@
-"""Trening bota RL (PPO, Stable-Baselines3) na arenie z Godota, z curriculum przeciwników.
+"""Trening bota RL (PPO, Stable-Baselines3) na arenie z Godota, etapami z kolejnymi przeciwnikami.
 
-Każdy etap curriculum uruchamia grę (scena training.tscn, tryb --headless) z innym przeciwnikiem
+Każdy etap uruchamia grę (scena training.tscn, tryb --headless) z innym przeciwnikiem
 i kontynuuje trening tego samego modelu. Po każdym etapie zapisywany jest model (.zip) i eksport ONNX.
 
 Przykład (PowerShell, katalog repozytorium):
-    .\\venv\\Scripts\\python training\\train_rl.py --curriculum random:300000,scripted:500000,fuzzy:500000
+    .\\venv\\Scripts\\python training\\train_rl.py --etapy random:300000,scripted:500000,fuzzy:500000
 Podgląd przebiegu: .\\venv\\Scripts\\tensorboard --logdir training\\runs
 """
 
@@ -33,7 +33,7 @@ DEFAULT_GODOT = (
 GODOT_START_DELAY_S = 2.0
 
 
-def parse_curriculum(text: str) -> list[tuple[str, int]]:
+def parse_stages(text: str) -> list[tuple[str, int]]:
     stages = []
     for item in text.split(","):
         opponent, steps = item.split(":")
@@ -59,7 +59,7 @@ def main() -> None:
     sys.stderr.reconfigure(encoding="utf-8")
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--curriculum", default="random:300000,scripted:500000,fuzzy:500000",
+    parser.add_argument("--etapy", default="random:300000,scripted:500000,fuzzy:500000",
                         help="etapy przeciwnik:kroki oddzielone przecinkami; kilku przeciwników naraz: scripted+fuzzy:kroki")
     parser.add_argument("--run", default=time.strftime("run_%Y%m%d_%H%M"), help="nazwa przebiegu (katalog w training/runs)")
     parser.add_argument("--resume", type=Path, help="model .zip, od którego kontynuować")
@@ -78,7 +78,7 @@ def main() -> None:
     set_random_seed(args.seed)
     model: PPO | None = PPO.load(args.resume) if args.resume else None
 
-    for stage_index, (opponent, steps) in enumerate(parse_curriculum(args.curriculum)):
+    for stage_index, (opponent, steps) in enumerate(parse_stages(args.etapy)):
         print(f"=== etap {stage_index}: przeciwnik {opponent}, {steps} kroków ===")
         godot_holder: dict = {}
         timer = threading.Timer(

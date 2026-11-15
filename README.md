@@ -9,21 +9,27 @@ temat 1: „Pojedynek na arenie: dwa boty, dwie strategie”.
 
 | Osoba | Za co odpowiadała |
 |---|---|
-| Filip Opacki | propozycja zmiany silnika z Unreal Engine na Godot; implementacja gry: arena i fizyka ciał sztywnych, postacie, pociski, skrzynie i pakiety, bot skryptowy, silnik logiki rozmytej i bot rozmyty, środowisko uczenia bota RL |
-| Zofia Jedlińska | faza testów: trening i ewaluacja bota RL (modele 9M i 15M), turniej botów, zebranie danych porównawczych, przygotowanie materiałów do oddania |
+| Filip Opacki | implementacja gry, silnik logiki rozmytej i bot rozmyty, środowisko uczenia bota RL |
+| Zofia Jedlińska | trening i ewaluacja bota RL, zebranie danych porównawczych |
 | Julia Szymczycha | sprawozdanie, analiza porównawcza wyników, prezentacja projektu |
 
 ## Cel projektu
 
-Na arenie 2D z fizyką walczą dwa boty. Każdy sam decyduje, czy atakować, robić unik, chować się za przeszkodą,
-zbierać amunicję czy się leczyć. Życie i amunicja są ograniczone.
+Na arenie 2D walczą dwa boty. Każdy sam decyduje, czy atakować, robić unik, schować się za przeszkodą, zebrać
+amunicję czy się leczyć. Życie (100 HP) i amunicja (5 naboi na start, najwyżej 10) są ograniczone, a pakiety
+amunicji i apteczki pojawiają się ponownie po pewnym czasie. Mecz trwa najwyżej 60 sekund. Kończy się śmiercią
+jednego z botów albo upływem czasu; wtedy wygrywa bot z większą liczbą punktów życia, a przy równym HP jest remis.
 
-- **Bot A** decyduje na podstawie reguł rozmytych (własny silnik wnioskowania Mamdaniego, 36 reguł w pliku JSON).
-- **Bot B** uczy się strategii przez uczenie ze wzmocnieniem (PPO ze Stable-Baselines3, połączenie z grą przez Godot RL Agents).
+Porównujemy dwie metody:
 
-Oba boty sterują tą samą postacią (to samo życie, broń i fizyka) i widzą tylko własne obserwacje, więc różnią się
-wyłącznie algorytmem decyzji. Celem jest porównanie obu metod: odsetek zwycięstw, zużycie amunicji, otrzymane
-obrażenia i skuteczność przeciw różnym przeciwnikom (losowemu i skryptowemu, czyli prostej maszynie stanów).
+- **bot A** podejmuje decyzje na podstawie reguł rozmytych (wnioskowanie Mamdaniego),
+- **bot B** uczy się przez uczenie ze wzmocnieniem (algorytm PPO - Proximal Policy Optimization).
+
+Jako punkt odniesienia służą dwa prostsze boty: skryptowy (popularny w grach) i losowy. Mierzymy odsetek
+zwycięstw, zużycie amunicji, otrzymane obrażenia i skuteczność przeciw różnym przeciwnikom.
+
+Ważnym wymaganiem jest niezależność: decyzje jednego bota nie mogą zależeć od algorytmu drugiego. Dlatego każdy
+bot dostaje tylko to, co sam może zobaczyć.
 
 Najważniejsze wyniki (turniej każdy z każdym, 100 meczów na parę, ziarno 41): bot RL po 15 mln kroków treningu
 wygrywa 96% meczów z botem losowym, 45% ze skryptowym i 39% z rozmytym. Bot rozmyty wygrywa 45% meczów ze skryptowym
@@ -38,13 +44,13 @@ i 100% z losowym. Wykresy i tabele są w `results/wykresy/`.
 | `README.md` | ten plik |
 | `sprawozdanie.pdf` | sprawozdanie |
 | `prezentacja.pdf` | prezentacja z zajęć |
-| `kod/` | kompletny kod projektu, czyli kopia repozytorium (bez plików tymczasowych i przebiegów treningu) |
+| `kod/` | kompletny kod projektu|
 | `dane/` | dane wejściowe gry (reguły rozmyte, konfiguracje fizyki, układ areny, wagi nagród) i przykładowe scenariusze testowe |
 | `modele/` | wytrenowane modele bota RL: ONNX (do gry) i zip Stable-Baselines3 (do dalszego treningu) |
 | `wyniki/` | wykresy, tabele, surowe wyniki meczów (CSV) i logi TensorBoarda |
 | `uruchomienie/` | `instrukcja_uruchomienia.pdf`, `wymagania.txt` i skrypty uruchamiające demo i ewaluację |
 
-### Repozytorium (katalog `kod/` w archiwum)
+### Kod
 
 | Katalog | Zawartość |
 |---|---|
@@ -65,7 +71,7 @@ i 100% z losowym. Wykresy i tabele są w `results/wykresy/`.
 
 | Składnik | Wersja |
 |---|---|
-| System | Windows 10/11 (testowane na Windows 11) |
+| System | Windows 10/11 (testowane na Windows 11); macOS i Linux powinny działać (nietestowane, polecenia w instrukcji uruchomienia, punkt 9) |
 | Godot (build .NET) | 4.7.2 stable |
 | .NET SDK | 8.0 |
 | Python | 3.12 (Python 3.13 nie zainstaluje `numpy==1.26.4`) |
@@ -78,14 +84,13 @@ Pełna lista wymagań: `uruchomienie/wymagania.txt`.
 
 ## Skrócona instrukcja uruchomienia
 
-Pełna instrukcja: `uruchomienie/instrukcja_uruchomienia.pdf`. Polecenia wpisuj w PowerShellu w katalogu `kod/`
-(w repozytorium: w katalogu głównym). `GODOT` oznacza pełną ścieżkę do `Godot_v4.7.2-stable_mono_win64_console.exe`.
+Pełna instrukcja: `uruchomienie/instrukcja_uruchomienia.pdf`. Polecenia wpisuj w PowerShellu w katalogu `kod/`. `GODOT` oznacza pełną ścieżkę do `Godot_v4.7.2-stable_mono_win64_console.exe`.
 
 1. Zainstaluj Godota 4.7.2 .NET i .NET SDK 8, potem zbuduj część C#:
    ```
    dotnet build godot\ArenaDuel.csproj
    ```
-2. **Demo bez treningu**: mecz wytrenowanego bota RL z botem rozmytym, z grafiką (model ONNX jest w repozytorium):
+2. **Demo bez treningu**: mecz wytrenowanego bota RL z botem rozmytym, z grafiką (model ONNX jest w projekcie):
    ```
    & GODOT --path godot -- --brain-a=rl --brain-b=fuzzy
    ```
@@ -94,13 +99,13 @@ Pełna instrukcja: `uruchomienie/instrukcja_uruchomienia.pdf`. Polecenia wpisuj 
    ```
    & GODOT --headless --fixed-fps 60 --path godot -- --matches=20 --brain-a=rl --brain-b=fuzzy --seed=41 --quiet=1 --csv=results/rl_vs_fuzzy.csv
    ```
-4. **Odtworzenie wyników z prezentacji** (300 meczów na model) i wykresów: `uruchomienie\odtworz_wyniki.ps1`
+4. **Odtworzenie wyników z prezentacji** (ewaluacja obu modeli i turniej, po 100 meczów na parę) i wykresów: `uruchomienie\odtworz_wyniki.ps1`
    (wymaga środowiska Pythona, punkt 5).
 5. **Trening** (opcjonalny, ok. 6,5 h): środowisko Pythona i skrypt treningowy:
    ```
    python -m venv venv
    .\venv\Scripts\pip install -r requirements.txt
-   .\venv\Scripts\python training\train_rl.py --curriculum random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
+   .\venv\Scripts\python training\train_rl.py --etapy random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
    ```
 
 ## Silnik gry
@@ -112,25 +117,24 @@ kolizje, ciągłe wykrywanie kolizji), raycastów do linii wzroku, edytora scen,
 ## Elementy fizyki
 
 Postacie, pociski i skrzynie to ciała sztywne (`RigidBody2D`). Gra przykłada tylko siły, momenty sił i impulsy,
-a ruch liczy silnik fizyki przy stałym kroku 60 Hz.
+a ruch liczy silnik fizyki przy stałym kroku 60 Hz. Trening przyspieszamy, zwiększając liczbę kroków fizyki na
+sekundę, a nie wydłużając sam krok, bo dłuższy krok psuje kolizje i odbicia.
 
-- **Bezwładność ruchu**: siła napędu i tłumienie liniowe, prędkość maksymalna 220 px/s; postać nie zmienia kierunku od razu.
-- **Obrót i celowanie**: moment siły i moment bezwładności, więc broń ma pęd kątowy i trzeba ją hamować przed celem.
-- **Unik**: impuls prędkości w bok, z czasem odnowienia 1,5 s.
-- **Odrzut**: strzał daje strzelcowi impuls przeciwny do pocisku.
-- **Lot pocisku**: prędkość 500 px/s malejąca przez tłumienie, ciągłe wykrywanie kolizji (CCD).
-- **Rykoszety**: restytucja 0,8, najwyżej 2 odbicia; można trafić zza osłony, ale też samego siebie.
-- **Obrażenia z energii kinetycznej**: D = 35 · (v/v₀)², więc strzał z daleka i po rykoszecie jest słabszy.
-- **Trafienie**: zderzenie przekazuje pęd i spycha trafionego.
-- **Skrzynie**: ruchome osłony o masie 15, które można pchać i obracać.
-- **Linia wzroku**: raycast; przeszkody i skrzynie zasłaniają przeciwnika i pociski.
+| Zjawisko | Jak działa | Wpływ na walkę |
+|---|---|---|
+| Ruch postaci | siła napędu i tłumienie, prędkość maksymalna 220 px/s, stała czasowa 0,25 s | postać nie skręca w miejscu, jej ruch da się przewidzieć |
+| Obrót i celowanie | moment siły i moment bezwładności, broń ma pęd kątowy | trzeba hamować obrót przed celem, inaczej broń przestrzeli |
+| Unik | impuls dający ok. 480 px/s w bok, odnowienie 1,5 s | unik trzeba zacząć z wyprzedzeniem |
+| Odrzut | strzał popycha strzelca do tyłu (ok. 40 px/s) | seria strzałów spycha strzelca z toru |
+| Lot pocisku | 500 px/s na starcie, prędkość maleje przez opór; ciągłe wykrywanie kolizji | pocisk widać i można go uniknąć, trzeba celować z wyprzedzeniem |
+| Rykoszet | współczynnik odbicia 0,8, najwyżej 2 odbicia | można trafić zza osłony, ale też samego siebie |
+| Obrażenia | z energii kinetycznej: D = 35 · (v/v₀)² | strzał z daleka i po odbiciu jest słabszy |
+| Skrzynie | ciała o masie 15, można je pchać i obracać | ruchoma osłona zasłania albo odsłania widok |
+
+Przeciwnika i pociski bot widzi tylko wtedy, gdy nic ich nie zasłania (sprawdzane raycastem).
 
 Parametry fizyki są w `godot/data/configs/default.tres` (wersja bez rykoszetów: `no_ricochet.tres`).
 Szczegóły i wzory są w sprawozdaniu (`sprawozdanie.pdf`).
-
-## Repozytorium
-
-https://github.com/kurliko/arena-duel-2 (gałąź `main`).
 
 ## Gotowe narzędzia a własny wkład
 
@@ -139,7 +143,7 @@ https://github.com/kurliko/arena-duel-2 (gałąź `main`).
 | Godot 4.7.2: silnik, fizyka 2D, raycasty, edytor | model gry i fizyki: siły, masy, momenty bezwładności, tłumienia, restytucja, obrażenia z energii, odrzut, skrzynie |
 | Godot RL Agents: węzły `Sync`, `AIController2D`, inferencja ONNX | architektura gry, kontrakty `Brain`/`Observation`/`Action`, percepcja z linią wzroku |
 | Stable-Baselines3: algorytm PPO | silnik logiki rozmytej z parserem reguł i testami, baza reguł, bot skryptowy, wspólne zachowania |
-| PyTorch, ONNX, OnnxRuntime, pandas, matplotlib | środowisko RL: obserwacje, funkcja nagrody, `ArenaSync`, trening na wielu arenach, curriculum; tryb wsadowy, statystyki, wykresy |
+| PyTorch, ONNX, OnnxRuntime, pandas, matplotlib | środowisko RL: obserwacje, funkcja nagrody, `ArenaSync`, trening na wielu arenach, trening etapami z kolejnymi przeciwnikami; tryb wsadowy, statystyki, wykresy |
 
 ---
 
@@ -194,14 +198,14 @@ Testy jednostkowe silnika (kod wyjścia 0 = wszystkie przeszły):
 
 Kod po stronie gry w `godot/scripts/rl/`, trening w `training/train_rl.py`.
 
-**Trening z curriculum** (każdy etap uruchamia grę w trybie `--headless` z innym przeciwnikiem):
+**Trening etapami** (każdy etap uruchamia grę w trybie `--headless` z innym przeciwnikiem):
 ```
-.\venv\Scripts\python training\train_rl.py --curriculum random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
+.\venv\Scripts\python training\train_rl.py --etapy random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8 --run rigid_v3
 ```
 - `--arenas`: liczba równoległych aren w jednej instancji gry, `--speedup`: przyspieszenie symulacji (domyślnie 8),
   `--resume model.zip`: kontynuacja treningu (z tą samą liczbą aren co zapisany model; modele z projektu mają 8).
 - Przeciwnicy mieszani na arenach: `scripted+fuzzy` (połowa aren z każdym), np. dotrenowanie użyte w projekcie:
-  `--resume training\models\rl_brain_9M_sb3.zip --curriculum scripted+fuzzy:6000000 --arenas 8 --seed 7 --run rigid_v3_ext`.
+  `--resume training\models\rl_brain_9M_sb3.zip --etapy scripted+fuzzy:6000000 --arenas 8 --seed 7 --run rigid_v3_ext`.
 - Skrypt szuka Godota w `C:\Tools\Godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64\`;
   inną ścieżkę podaje się zmienną `$env:GODOT_BIN`.
 - Wyniki w `training/runs/<nazwa>/` (poza gitem): modele `.zip` i `.onnx` po każdym etapie, checkpointy co 100 tys. kroków,
@@ -217,6 +221,6 @@ skrypt treningowy z `--arenas` zgodnym ze sceną (domyślnie 8), potem F6 w edyt
 
 | Plik | Opis |
 |---|---|
-| `godot/models/rl_brain.onnx` | model domyślny w grze: 15 mln kroków (curriculum 9 mln + dotrenowanie 6 mln z mieszanymi przeciwnikami) |
+| `godot/models/rl_brain.onnx` | model domyślny w grze: 15 mln kroków (trening etapami 9 mln + dotrenowanie 6 mln z mieszanymi przeciwnikami) |
 | `godot/models/rl_brain_9M.onnx` | model po 9 mln kroków (do porównania) |
 | `training/models/rl_brain_15M_sb3.zip`, `rl_brain_9M_sb3.zip` | te same modele w formacie Stable-Baselines3 (do `--resume`) |
