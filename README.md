@@ -37,20 +37,23 @@ i 100% z losowym. Wykresy i tabele są w `results/wykresy/`.
 
 ## Zawartość katalogów
 
-### Archiwum oddania (`projekt_1_pon_10.30.zip`)
+### Archiwum (`projekt_1_pon_10.30.zip`)
 
 | Katalog / plik | Zawartość |
 |---|---|
 | `README.md` | ten plik |
 | `sprawozdanie.pdf` | sprawozdanie |
 | `prezentacja.pdf` | prezentacja z zajęć |
-| `kod/` | kompletny kod projektu|
-| `dane/` | dane wejściowe gry (reguły rozmyte, konfiguracje fizyki, układ areny, wagi nagród) i przykładowe scenariusze testowe |
-| `modele/` | wytrenowane modele bota RL: ONNX (do gry) i zip Stable-Baselines3 (do dalszego treningu) |
-| `wyniki/` | wykresy, tabele, surowe wyniki meczów (CSV) i logi TensorBoarda |
-| `uruchomienie/` | `instrukcja_uruchomienia.pdf`, `wymagania.txt` i skrypty uruchamiające demo i ewaluację |
+| `godot/` | projekt gry (kod, sceny, dane gry, modele ONNX) |
+| `training/` | trening bota RL i modele Stable-Baselines3 |
+| `analysis/` | skrypt do wykresów i tabel |
+| `results/` | wyniki: wykresy, tabele, surowe wyniki meczów (CSV) i logi TensorBoarda |
+| `uruchomienie/` | `instrukcja_uruchomienia.pdf`, `wymagania.txt` i skrypty uruchamiające demo i odtwarzanie wyników |
+| `scenariusze_testowe.md` | przykładowe scenariusze testowe |
+| `requirements.txt` | biblioteki Pythona |
 
-### Kod
+
+### Szczegóły kodu
 
 | Katalog | Zawartość |
 |---|---|
@@ -84,7 +87,7 @@ Pełna lista wymagań: `uruchomienie/wymagania.txt`.
 
 ## Skrócona instrukcja uruchomienia
 
-Pełna instrukcja: `uruchomienie/instrukcja_uruchomienia.pdf`. Polecenia wpisuj w PowerShellu w katalogu `kod/`. `GODOT` oznacza pełną ścieżkę do `Godot_v4.7.2-stable_mono_win64_console.exe`.
+Pełna instrukcja: `uruchomienie/instrukcja_uruchomienia.pdf`. Polecenia wpisuj w PowerShellu w głównym folderze projektu. `GODOT` oznacza pełną ścieżkę do `Godot_v4.7.2-stable_mono_win64_console.exe`.
 
 1. Zainstaluj Godota 4.7.2 .NET i .NET SDK 8, potem zbuduj część C#:
    ```
@@ -224,3 +227,7 @@ skrypt treningowy z `--arenas` zgodnym ze sceną (domyślnie 8), potem F6 w edyt
 | `godot/models/rl_brain.onnx` | model domyślny w grze: 15 mln kroków (trening etapami 9 mln + dotrenowanie 6 mln z mieszanymi przeciwnikami) |
 | `godot/models/rl_brain_9M.onnx` | model po 9 mln kroków (do porównania) |
 | `training/models/rl_brain_15M_sb3.zip`, `rl_brain_9M_sb3.zip` | te same modele w formacie Stable-Baselines3 (do `--resume`) |
+
+
+## Link do repo na githubie
+https://github.com/kurliko/arena-duel-2

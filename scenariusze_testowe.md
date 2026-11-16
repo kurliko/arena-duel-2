@@ -1,6 +1,6 @@
 # Przykładowe scenariusze testowe
 
-Każdy scenariusz uruchamia się z katalogu `kod/` (w repozytorium: z katalogu głównego). `GODOT` to ścieżka do
+Każdy scenariusz uruchamia się z głównego folderu projektu. `GODOT` to ścieżka do
 `Godot_v4.7.2-stable_mono_win64_console.exe`. Żaden scenariusz nie wymaga treningu: bot RL używa gotowego modelu
 `godot/models/rl_brain.onnx`. Ten sam seed daje zawsze te same mecze.
 
@@ -13,9 +13,9 @@ Każdy scenariusz uruchamia się z katalogu `kod/` (w repozytorium: z katalogu g
 | 5 | Model po 9 mln kroków | `... -- --brain-a=rl --brain-b=fuzzy --rl-model=res://models/rl_brain_9M.onnx` | słabszy bot RL (22% wygranych z rozmytym zamiast 39%) |
 | 6 | Polityka deterministyczna | `... -- --brain-a=rl --brain-b=scripted --rl-deterministic=1` | bot RL zawsze wybiera najbardziej prawdopodobną akcję |
 | 7 | Testy silnika rozmytego | `& GODOT --headless --path godot --script res://tests/test_fuzzy.gd` | kod wyjścia 0 = wszystkie testy przeszły |
-| 8 | Odtworzenie ewaluacji | `.\uruchomienie\odtworz_wyniki.ps1` (w archiwum: `..\uruchomienie\odtworz_wyniki.ps1`) | `results/odtworzone/` z tymi samymi tabelami co `results/wykresy/` |
+| 8 | Odtworzenie ewaluacji | `.\uruchomienie\odtworz_wyniki.ps1` | `results/odtworzone/` z tymi samymi tabelami co `results/wykresy/` |
 
-Dane wejściowe gry (kopie są w katalogu `dane/` archiwum):
+Dane wejściowe gry:
 
 | Plik | Zawartość |
 |---|---|
