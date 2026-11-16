@@ -1,11 +1,6 @@
 class_name ObservationEncoder
-## Spłaszczenie Observation do wektora liczb (wejście sieci PPO). Te same dane, które dostają inne mózgi,
-## w stałej kolejności i skali ok. -1..1. Względne pozycje mnożone przez RELATIVE_GAIN, bo przeciwnik
-## i pociski są zwykle bliżej niż observation_distance_scale.
 
 const RELATIVE_GAIN: float = 2.0
-## 12 (bot, z pozostałym czasem meczu) + 8 (przeciwnik) + 4 (pamięć przeciwnika) + 5 * k (pociski) + rays
-## + 3 (amunicja) + 3 (apteczka) + 5 * k (skrzynie) + 3 (osłona)
 const SELF_SIZE: int = 12
 const OPPONENT_SIZE: int = 8
 const MEMORY_SIZE: int = 4
@@ -20,7 +15,6 @@ static func size(config: GameConfig) -> int:
 			+ config.vision_rays + 2 * PICKUP_SIZE + CRATE_SIZE * config.nearest_crates_k + COVER_SIZE
 
 
-## memory: pamięć bota o przeciwniku (stan mózgu RL); null = brak pamięci (same zera).
 static func encode(obs: Observation, config: GameConfig, memory: OpponentMemory = null) -> Array[float]:
 	var values: Array[float] = []
 	if obs == null:
@@ -34,8 +28,6 @@ static func encode(obs: Observation, config: GameConfig, memory: OpponentMemory 
 		obs.self_hp, obs.self_ammo, obs.shot_cooldown_left, obs.dash_cooldown_left, obs.time_left,
 	])
 
-	# Przeciwnik: widoczność, pozycja, prędkość, HP oraz kąt do niego względem celowania (cos, sin),
-	# czyli wprost informacja, w którą stronę obrócić broń.
 	if obs.opponent_visible:
 		var relative_angle: float = angle_difference(obs.self_aim_angle, obs.opponent_relative_pos.angle())
 		values.append_array([
@@ -46,7 +38,6 @@ static func encode(obs: Observation, config: GameConfig, memory: OpponentMemory 
 	else:
 		values.append_array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 
-	# Pamięć: gdzie przeciwnik był ostatnio widziany i jak dawno (przydatne, gdy schowa się za przeszkodą).
 	if memory != null and memory.has_last_seen:
 		var last_seen: Vector2 = memory.relative_position(obs)
 		values.append_array([1.0, last_seen.x * RELATIVE_GAIN, last_seen.y * RELATIVE_GAIN, memory.time_since_seen(obs)])

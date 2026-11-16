@@ -1,23 +1,17 @@
 class_name FuzzyRule
 extends RefCounted
-## Reguła w postaci tekstowej, np.:
-##   IF hp IS low AND distance IS near THEN cover IS high
-##   IF threat IS high OR hp IS NOT high THEN dodge IS medium
-## W jednej regule spójniki muszą być jednakowe (same AND albo same OR). AND = min, OR = max, NOT = 1 - x.
 
 const OP_AND: String = "and"
 const OP_OR: String = "or"
 
 var text: String
 var weight: float = 1.0
-## Każdy warunek: {"variable": String, "set": String, "negate": bool}.
 var conditions: Array[Dictionary] = []
 var operator: String = OP_AND
 var output_variable: String
 var output_set: String
 
 
-## Zwraca regułę albo null (z komunikatem błędu), jeśli tekst jest niepoprawny.
 static func parse(rule_text: String, rule_weight: float = 1.0) -> FuzzyRule:
 	var rule := FuzzyRule.new()
 	rule.text = rule_text
@@ -65,7 +59,6 @@ static func _fail(rule_text: String, reason: String) -> FuzzyRule:
 	return null
 
 
-## Siła odpalenia reguły dla wejść po fuzzyfikacji ({zmienna: {zbiór: stopień}}).
 func strength(fuzzified: Dictionary) -> float:
 	var result: float = 1.0 if operator == OP_AND else 0.0
 	for condition: Dictionary in conditions:

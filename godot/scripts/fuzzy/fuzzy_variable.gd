@@ -1,6 +1,5 @@
 class_name FuzzyVariable
 extends RefCounted
-## Zmienna lingwistyczna: zakres wartości i nazwane zbiory rozmyte.
 
 var name: String
 var min_value: float
@@ -27,7 +26,6 @@ func get_set(set_name: String) -> FuzzySet:
 	return null
 
 
-## Fuzzyfikacja: stopień przynależności wartości (obciętej do zakresu) do każdego zbioru.
 func fuzzify(value: float) -> Dictionary:
 	var x: float = clampf(value, min_value, max_value)
 	var degrees: Dictionary = {}

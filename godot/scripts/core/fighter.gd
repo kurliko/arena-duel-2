@@ -1,11 +1,5 @@
 class_name Fighter
 extends RigidBody2D
-## Ciało bota jako ciało sztywne symulowane przez silnik fizyki:
-## - ruch: siła napędu F w kierunku akcji, tłumienie liniowe (opór), więc a = F/m i v_max = F/(m*c),
-## - celowanie: obrót całego ciała momentem siły tau przy momencie bezwładności I (eps = tau/I) i tłumieniu kątowym,
-## - unik: impuls (zmiana prędkości J/m), strzał: odrzut -m_p * v0 (III zasada dynamiki),
-## - zderzenia z innymi ciałami (postacie, skrzynie, pociski) rozwiązuje silnik z masami i restytucją.
-## Nie podejmuje decyzji: wykonuje ostatnią Action ustawioną przez MatchManager.
 
 signal shot_fired(shooter: Fighter, direction: Vector2)
 signal died(fighter: Fighter)
@@ -17,7 +11,6 @@ const HP_BAR_BG: Color = Color(0.0, 0.0, 0.0, 0.6)
 const HP_BAR_FG: Color = Color(0.3, 0.9, 0.4)
 const HP_BAR_LOW: Color = Color(0.95, 0.3, 0.25)
 const HP_BAR_SIZE: Vector2 = Vector2(36.0, 4.0)
-## Smuga zrywu: zapamiętane pozycje, gdy prędkość przekracza ten ułamek prędkości granicznej (tylko grafika).
 const DASH_TRAIL_SPEED_FACTOR: float = 1.25
 const DASH_TRAIL_LENGTH: int = 8
 const DASH_TRAIL_ALPHA: float = 0.55
@@ -34,7 +27,6 @@ var active: bool = false
 var current_action: Action = Action.idle()
 var stats: FighterStats = FighterStats.new()
 
-## Kąt celowania = obrót ciała (broń jest sztywno związana z postacią).
 var aim_angle: float:
 	get:
 		return wrapf(rotation, -PI, PI)
@@ -57,7 +49,6 @@ func setup(cfg: GameConfig, fighter_color: Color, fighter_label: String) -> void
 	linear_damp = config.fighter_linear_damp
 	angular_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	angular_damp = config.fighter_angular_damp
-	# Tarcie zerowe: kontakt ze ścianą nie obraca postaci, obrót pochodzi tylko z momentu siły.
 	var material := PhysicsMaterial.new()
 	material.friction = 0.0
 	material.bounce = config.fighter_restitution
@@ -71,11 +62,7 @@ func setup(cfg: GameConfig, fighter_color: Color, fighter_label: String) -> void
 	add_child(collision)
 
 
-## Ustawienie na pozycji startowej (współrzędne areny). Stan ciała sztywnego zmieniamy w _integrate_forces,
-## a nie przez bezpośrednie przypisanie, żeby silnik fizyki nie nadpisał pozycji i prędkości.
 func reset_at(spawn_position: Vector2, facing_angle: float) -> void:
-	# state.transform w _integrate_forces jest globalna, a pozycja startowa lokalna (współrzędne areny);
-	# w scenie treningowej areny są przesunięte, więc trzeba złożyć ją z transformacją rodzica.
 	_reset_transform = (get_parent() as Node2D).global_transform * Transform2D(facing_angle, spawn_position)
 	_pending_reset = true
 	position = spawn_position
@@ -145,7 +132,6 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
-## Smuga po zrywie: przy prędkości wyraźnie większej od granicznej zapamiętujemy pozycje, potem smuga zanika.
 func _update_dash_trail() -> void:
 	if linear_velocity.length() > config.max_speed() * DASH_TRAIL_SPEED_FACTOR:
 		_dash_trail.push_front(global_position)
@@ -155,7 +141,6 @@ func _update_dash_trail() -> void:
 		_dash_trail.pop_back()
 
 
-## Moment siły dla obrotu (siły i momenty przyłożone w tym ticku działają przez jeden krok fizyki).
 func _apply_turn() -> void:
 	var torque: float = 0.0
 	match current_action.turn:
@@ -174,7 +159,6 @@ func _apply_turn() -> void:
 func _apply_movement() -> void:
 	var move_dir: Vector2 = Action.move_vector(current_action.move)
 	if current_action.dash and dash_cooldown_left <= 0.0:
-		# Unik: impuls w kierunku ruchu, a bez ruchu w bok względem celowania.
 		var dash_dir: Vector2 = move_dir if move_dir != Vector2.ZERO else aim_direction().orthogonal()
 		apply_central_impulse(dash_dir * config.dash_impulse)
 		dash_cooldown_left = config.dash_cooldown
@@ -190,7 +174,6 @@ func _apply_shoot() -> void:
 	shot_cooldown_left = config.shot_cooldown
 	stats.shots += 1
 	var direction: Vector2 = aim_direction()
-	# Odrzut: pęd pocisku m_p * v0 oddany strzelcowi w przeciwnym kierunku.
 	apply_central_impulse(-direction * config.projectile_mass * config.projectile_speed)
 	shot_fired.emit(self, direction)
 
@@ -199,16 +182,13 @@ func _draw() -> void:
 	if config == null:
 		return
 	var r: float = config.fighter_radius
-	# Smuga zrywu: półprzezroczyste „duchy” w poprzednich pozycjach, coraz mniejsze i bledsze.
 	for i: int in range(1, _dash_trail.size()):
 		var fade: float = 1.0 - float(i) / DASH_TRAIL_LENGTH
 		draw_circle(to_local(_dash_trail[i]), r * (0.6 + 0.4 * fade), Color(color, DASH_TRAIL_ALPHA * fade))
-	# Rysowanie w układzie ciała (obraca się razem z celowaniem): korpus i lufa.
 	draw_rect(Rect2(Vector2(r - 4.0, -BARREL_SIZE.y / 2.0), BARREL_SIZE), BARREL_COLOR)
 	draw_circle(Vector2.ZERO, r + 2.0, OUTLINE_COLOR)
 	draw_circle(Vector2.ZERO, r, color)
 	draw_circle(Vector2(r * 0.35, 0.0), r * 0.3, color.lightened(0.35))
-	# Pasek HP w układzie świata (bez obrotu).
 	draw_set_transform(Vector2.ZERO, -rotation)
 	var bar_pos := Vector2(-HP_BAR_SIZE.x / 2.0, -r - 12.0)
 	var fraction: float = hp / config.max_hp

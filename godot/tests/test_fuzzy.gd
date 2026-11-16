@@ -1,7 +1,5 @@
+# testy silnika rozmytego: godot --headless --path godot --script res://tests/test_fuzzy.gd
 extends SceneTree
-## Testy jednostkowe silnika rozmytego. Uruchomienie (z katalogu repozytorium):
-##   Godot_..._console.exe --headless --path godot --script res://tests/test_fuzzy.gd
-## Kod wyjścia 0 = wszystkie testy przeszły.
 
 const EPS: float = 1e-3
 

@@ -1,12 +1,5 @@
-"""Trening bota RL (PPO, Stable-Baselines3) na arenie z Godota, etapami z kolejnymi przeciwnikami.
-
-Każdy etap uruchamia grę (scena training.tscn, tryb --headless) z innym przeciwnikiem
-i kontynuuje trening tego samego modelu. Po każdym etapie zapisywany jest model (.zip) i eksport ONNX.
-
-Przykład (PowerShell, katalog repozytorium):
-    .\\venv\\Scripts\\python training\\train_rl.py --etapy random:300000,scripted:500000,fuzzy:500000
-Podgląd przebiegu: .\\venv\\Scripts\\tensorboard --logdir training\\runs
-"""
+# trening PPO, kazdy etap odpala godota z innym przeciwnikiem
+# np. python training/train_rl.py --etapy random:3000000,scripted:3000000,fuzzy:3000000 --arenas 8
 
 import argparse
 import os
@@ -29,7 +22,6 @@ DEFAULT_GODOT = (
     r"C:\Tools\Godot\Godot_v4.7.2-stable_mono_win64\Godot_v4.7.2-stable_mono_win64"
     r"\Godot_v4.7.2-stable_mono_win64_console.exe"
 )
-# Godot czeka ok. 1 s po starcie na serwer Pythona; ten odstęp daje Pythonowi czas na otwarcie portu.
 GODOT_START_DELAY_S = 2.0
 
 
@@ -54,7 +46,6 @@ def launch_godot(args: argparse.Namespace, opponent: str, stage_index: int, log_
 
 
 def main() -> None:
-    # Eksporter PyTorcha wypisuje emoji, których konsola Windows (cp1250) nie obsługuje.
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
@@ -73,8 +64,6 @@ def main() -> None:
 
     run_dir = REPO_ROOT / "training" / "runs" / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
-    # Ziarno PyTorcha i NumPy ustawiamy wprost: wrapper środowiska Godota nie obsługuje env.seed(),
-    # a gra ma własne ziarna aren (--seed).
     set_random_seed(args.seed)
     model: PPO | None = PPO.load(args.resume) if args.resume else None
 

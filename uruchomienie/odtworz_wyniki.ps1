@@ -1,10 +1,4 @@
-﻿# Odtwarza wyniki z prezentacji: modele bota RL po 9 i 15 mln kroków, po 100 meczów
-# z każdym przeciwnikiem (losowy, skryptowy, rozmyty), oraz pozostałe pary turnieju
-# (rozmyty, skryptowy, losowy, każdy z każdym), ziarno 41. Dziewięć serii działa równolegle
-# w trybie bez grafiki (ok. 15–30 min). Potem rysuje wykresy i tabele.
-# Wyniki w: results\odtworzone\ (CSV, wykresy, tabele). Te same ziarna dają identyczne mecze,
-# więc tabele powinny być takie same jak w results\wykresy\.
-
+﻿# rozgrywa wszystkie mecze z prezentacji (seed 41, po 100 na pare) i rysuje wykresy
 param(
     [int]$Matches = 100,
     [int]$Seed = 41
@@ -28,7 +22,6 @@ try {
                 -RedirectStandardOutput (Join-Path $Out "_${tag}_$opp.log") -RedirectStandardError (Join-Path $Out "_${tag}_$opp.err")
         }
     }
-    # Pozostałe pary turnieju każdy z każdym (bez bota RL).
     $Pairs = @("fuzzy_scripted", "fuzzy_random", "scripted_random")
     foreach ($pair in $Pairs) {
         $a, $b = $pair.Split("_")
@@ -41,7 +34,6 @@ try {
     Write-Host "Trwa $($procs.Count) serii meczów..."
     $procs | Wait-Process
 
-    # Przygotowanie plikow
     foreach ($tag in $Models.Keys) {
         $rows = foreach ($opp in $Opponents) { Import-Csv (Join-Path $Out "_${tag}_$opp.csv") }
         $rows | Export-Csv (Join-Path $Out "eval_rigid_v3_${tag}_100x3.csv") -NoTypeInformation -Encoding utf8

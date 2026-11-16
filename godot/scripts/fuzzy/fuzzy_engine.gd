@@ -1,18 +1,12 @@
 class_name FuzzyEngine
 extends RefCounted
-## Własny silnik wnioskowania rozmytego typu Mamdaniego:
-## fuzzyfikacja -> siła reguł (AND = min, OR = max) -> implikacja min (obcięcie zbioru wyjściowego)
-## -> agregacja max -> defuzzyfikacja metodą środka ciężkości (próbkowanie zakresu wyjścia).
-## Zmienne, zbiory i reguły są wczytywane z pliku JSON (data/fuzzy_rules.json).
 
-## Liczba próbek zakresu zmiennej wyjściowej przy liczeniu środka ciężkości.
 const CENTROID_SAMPLES: int = 101
 
 var inputs: Dictionary = {}   # nazwa -> FuzzyVariable
 var outputs: Dictionary = {}  # nazwa -> FuzzyVariable
 var rules: Array[FuzzyRule] = []
 
-## Stan ostatniego wnioskowania (do wizualizacji „myślenia” bota).
 var last_fuzzified: Dictionary = {}
 var last_rule_strengths: PackedFloat32Array = PackedFloat32Array()
 var last_outputs: Dictionary = {}
@@ -59,13 +53,12 @@ func _validate(rule: FuzzyRule) -> bool:
 	return true
 
 
-## Wnioskowanie: wartości wejść (nazwa -> liczba) -> wartości wyjść (nazwa -> liczba ostra).
+# mamdani: AND = min, OR = max, laczenie przez max, na koncu srodek ciezkosci
 func infer(crisp_inputs: Dictionary) -> Dictionary:
 	last_fuzzified = {}
 	for var_name: String in inputs:
 		last_fuzzified[var_name] = (inputs[var_name] as FuzzyVariable).fuzzify(crisp_inputs[var_name])
 
-	# Aktywacja każdego zbioru wyjściowego = maksimum sił reguł, które do niego prowadzą.
 	var activations: Dictionary = {}
 	for var_name: String in outputs:
 		activations[var_name] = {}
@@ -83,7 +76,6 @@ func infer(crisp_inputs: Dictionary) -> Dictionary:
 	return last_outputs
 
 
-## Środek ciężkości agregatu obciętych zbiorów; 0 (minimum zakresu), gdy żadna reguła nie odpaliła.
 func _centroid(variable: FuzzyVariable, activations: Dictionary) -> float:
 	var weighted_sum: float = 0.0
 	var mass: float = 0.0

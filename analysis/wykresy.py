@@ -1,10 +1,4 @@
-# Wykresy i tabele z wyników treningu i ewaluacji bota RL.
-
-# Czyta pliki CSV z katalogu results/ i zapisuje wykresy PNG oraz tabele (CSV i Markdown)
-# do results/wykresy/. Uruchomienie z katalogu repozytorium:
-
-#     .\\venv\\Scripts\\python analysis\\wykresy.py
-
+# wykresy i tabele z plikow w results/, zapis do results/wykresy/
 from __future__ import annotations
 
 import argparse
@@ -22,13 +16,10 @@ RESULTS = ROOT / "results"
 OUT = RESULTS / "wykresy"
 EVAL_DIR = RESULTS
 
-# Pliki z przebiegiem treningu.
 TRAINING_FILES = ["training_rigid_v3_9M.csv", "training_rigid_v3_ext_15M.csv"]
-# Ewaluacje po 100 meczów na przeciwnika; klucz to etykieta modelu.
 EVAL_FILES = {"9M": "eval_rigid_v3_9M_100x3.csv", "15M": "eval_rigid_v3_15M_100x3.csv"}
 OPPONENTS = ["random", "scripted", "fuzzy"]
 OPPONENT_LABELS = {"random": "losowy", "scripted": "skryptowy", "fuzzy": "rozmyty"}
-# Granice etapów treningu w krokach i ich opisy.
 STAGES = [(0, 3e6, "losowy"), (3e6, 6e6, "skryptowy"), (6e6, 9e6, "rozmyty"), (9e6, 15e6, "skryptowy + rozmyty")]
 BIN_STEPS = 250_000
 Z_95 = 1.96
@@ -38,7 +29,6 @@ COLOR_15M = "#2563EB"
 
 
 def wilson(wins: int, n: int) -> tuple[float, float]:
-    """Przedział ufności 95% Wilsona dla odsetka zwycięstw."""
     if n == 0:
         return 0.0, 0.0
     p = wins / n
@@ -129,14 +119,12 @@ def win_rate_chart(table: pd.DataFrame) -> None:
     plt.close(fig)
 
 
-# Turniej każdy z każdym: pary bez bota RL z osobnego pliku, pary z botem RL z ewaluacji modelu 15M.
 TOURNAMENT_FILE = "turniej_bez_rl_100.csv"
 BRAINS = ["rl", "fuzzy", "scripted", "random"]
 BRAIN_LABELS = {"rl": "RL (15M)", "fuzzy": "rozmyty", "scripted": "skryptowy", "random": "losowy"}
 
 
 def _pair_stats(d: pd.DataFrame, a: str, b: str) -> dict:
-    """Statystyki pary, gdzie a grał jako bot A, a b jako bot B."""
     n = len(d)
     wins_a = int((d["winner"] == "A").sum())
     wins_b = int((d["winner"] == "B").sum())
@@ -166,7 +154,6 @@ def tournament() -> pd.DataFrame | None:
     order = {BRAIN_LABELS[b]: i for i, b in enumerate(BRAINS)}
     table = table.sort_values(by=["bot_1", "bot_2"], key=lambda s: s.map(order)).reset_index(drop=True)
 
-    # Macierz: odsetek zwycięstw bota z wiersza nad botem z kolumny.
     labels = [BRAIN_LABELS[b] for b in BRAINS]
     matrix = pd.DataFrame(index=labels, columns=labels, dtype=float)
     for r in table.itertuples(index=False):

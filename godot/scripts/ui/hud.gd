@@ -1,6 +1,5 @@
 class_name Hud
 extends CanvasLayer
-## HUD: nazwy mózgów, HP, amunicja, czas meczu i wynik serii.
 
 const MARGIN: float = 12.0
 const FONT_SIZE: int = 18
@@ -55,7 +54,6 @@ func _fighter_text(side: String, brain_name: String, fighter: Fighter) -> String
 		side, brain_name, fighter.hp, fighter.ammo, fighter.linear_velocity.length()]
 
 
-## Bieżące zachowanie mózgu: wybrana akcja bota rozmytego z opłacalnościami albo stan FSM.
 func _brain_text(brain: Brain) -> String:
 	var fuzzy := brain as FuzzyBrain
 	if fuzzy != null and not fuzzy.last_outputs.is_empty():

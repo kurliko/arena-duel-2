@@ -1,13 +1,8 @@
 class_name ScriptedBrain
 extends Brain
-## Prosta maszyna stanów (FSM): klasyczne AI z gier jako punkt odniesienia i etap treningu bota RL.
-## Stany: LECZENIE, AMUNICJA, ATAK, SZUKANIE (w tej kolejności priorytetu); niezależnie od stanu
-## zryw przed nadlatującym pociskiem.
-## Zachowania pochodzą ze wspólnego modułu Behaviors (te same co w FuzzyBrain).
 
 enum State { ATTACK, SEEK_AMMO, SEARCH, HEAL }
 
-## Próg HP (ułamek), poniżej którego bot idzie po apteczkę.
 const HEAL_HP_THRESHOLD: float = 0.4
 
 var state: State = State.SEARCH

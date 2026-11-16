@@ -1,17 +1,12 @@
 class_name FuzzyBrain
 extends Brain
-## Bot rozmyty: z Observation liczy wejścia lingwistyczne, własny silnik Mamdaniego (FuzzyEngine)
-## ocenia opłacalność pięciu zachowań (atak, unik, osłona, zbieranie amunicji, leczenie), a bot wykonuje
-## najbardziej opłacalne przez wspólny moduł Behaviors. Reguły są w data/fuzzy_rules.json.
 
 const DEFAULT_RULES_PATH: String = "res://data/fuzzy_rules.json"
-## Premia dla zachowania wybranego w poprzedniej decyzji: ogranicza przeskakiwanie między zachowaniami
-## przy zbliżonej opłacalności.
+# premia dla poprzedniego wyboru, zeby bot nie skakal miedzy zachowaniami
 const HYSTERESIS: float = 0.05
 const OUTPUTS: Array[String] = ["attack", "dodge", "cover", "collect", "heal"]
 
 var engine: FuzzyEngine
-## Stan ostatniej decyzji (do HUD-u i wizualizacji „myślenia”).
 var last_inputs: Dictionary = {}
 var last_outputs: Dictionary = {}
 var chosen: String = "attack"
@@ -52,27 +47,20 @@ func decide(obs: Observation) -> Action:
 	return action
 
 
-## Wartości wejść silnika rozmytego w jednostkach z pliku reguł (px, ułamki 0..1).
 func _fuzzy_inputs(obs: Observation) -> Dictionary:
 	var scale: float = _config.observation_distance_scale
 	return {
-		# Niewidoczny przeciwnik: odległość nieznana, traktowana jak daleko.
 		"distance": obs.opponent_relative_pos.length() * scale if obs.opponent_visible else _config.vision_range,
 		"hp": obs.self_hp,
 		"ammo": obs.self_ammo,
 		"visible": 1.0 if obs.opponent_visible else 0.0,
 		"threat": _behaviors.projectile_threat(obs),
 		"opponent_speed": obs.opponent_velocity.length() if obs.opponent_visible else 0.0,
-		# Energia, z jaką pocisk doleci do przeciwnika (ułamek energii wylotowej): spada z odległością przez opór.
 		"impact_energy": _impact_energy(obs),
-		# Nieznane HP przeciwnika: wartość środkowa, nie aktywuje ani „mało”, ani „dużo”.
 		"opponent_hp": obs.opponent_hp if obs.opponent_visible else 0.5,
 		"pickup_distance": obs.ammo_pickup_relative_pos.length() * scale if obs.ammo_pickup_available else _config.vision_range,
 		"medkit_distance": obs.medkit_relative_pos.length() * scale if obs.medkit_available else _config.vision_range,
-		# Gotowość celowania przy bezwładności obrotu (stopnie): kąt, przy którym broń sama by się zatrzymała
-		# (obecny kąt + omega / tłumienie kątowe), względem kierunku do przeciwnika. Niewidoczny: 180.
 		"aim_error": _predicted_aim_error_deg(obs),
-		# Własna prędkość jako ułamek prędkości granicznej: powyżej 1 tylko po zryw albo pchnięciu (impulsy).
 		"self_speed": obs.self_velocity.length(),
 	}
 

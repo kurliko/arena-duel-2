@@ -1,7 +1,5 @@
 class_name Effects
 extends Node2D
-## Krótkie efekty wizualne (błysk wystrzału, iskry trafienia). Tylko grafika: w trybie --headless
-## nie są tworzone, więc nie wpływają na symulację ani na szybkość treningu.
 
 enum Kind { MUZZLE_FLASH, IMPACT }
 

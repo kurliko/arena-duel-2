@@ -1,7 +1,5 @@
 class_name FuzzySet
 extends RefCounted
-## Zbiór rozmyty z trapezową funkcją przynależności (a, b, c, d).
-## Trójkąt to trapez z b == c. Ramię lewe: a == b, ramię prawe: c == d.
 
 var name: String
 var a: float

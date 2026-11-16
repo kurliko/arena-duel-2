@@ -1,7 +1,4 @@
 class_name Perception
-## Budowanie Observation z perspektywy jednego bota: tylko to, co ten bot może wiedzieć.
-## Przeciwnik i pociski są widoczne wyłącznie przy wolnej linii wzroku (raycast); zasłaniają ją
-## stałe przeszkody i skrzynie.
 
 
 static func build(me: Fighter, opponent: Fighter, arena: Arena, projectiles: Array[Projectile],
@@ -50,7 +47,6 @@ static func build(me: Fighter, opponent: Fighter, arena: Arena, projectiles: Arr
 	return obs
 
 
-## Najbliższy dostępny pakiet danego rodzaju. Położenie pakietów to wiedza o mapie, wspólna dla obu botów.
 static func _nearest_pickup(me: Fighter, pickups: Array[Pickup], kind: Pickup.Kind) -> Pickup:
 	var nearest: Pickup = null
 	for pickup: Pickup in pickups:
@@ -78,7 +74,6 @@ static func _visible_projectiles(me: Fighter, arena: Arena, projectiles: Array[P
 	return result
 
 
-## k najbliższych skrzyń (pozycja i prędkość względna). Skrzynie są duże i widoczne z daleka.
 static func _nearest_crates(me: Fighter, crates: Array[Crate], config: GameConfig) -> Array[Dictionary]:
 	var sorted: Array[Crate] = crates.duplicate()
 	sorted.sort_custom(func(a: Crate, b: Crate) -> bool:
@@ -92,9 +87,6 @@ static func _nearest_crates(me: Fighter, crates: Array[Crate], config: GameConfi
 	return result
 
 
-## Punkt osłony: dla każdej stałej przeszkody punkt tuż za nią po stronie przeciwnej do przeciwnika.
-## Wybierany jest najbliższy botowi punkt wewnątrz areny, poza przeszkodami i zasłonięty przed przeciwnikiem.
-## Zwraca Vector2(INF, INF), gdy nie ma takiego punktu. Układ przeszkód to wiedza o mapie, wspólna dla obu botów.
 static func _nearest_cover(me_pos: Vector2, opponent_pos: Vector2, arena: Arena, config: GameConfig) -> Vector2:
 	var clearance: float = config.fighter_radius + config.cover_margin
 	var interior := Rect2(Vector2.ZERO, arena.layout.size).grow(-clearance)
@@ -102,7 +94,6 @@ static func _nearest_cover(me_pos: Vector2, opponent_pos: Vector2, arena: Arena,
 	var best_distance: float = INF
 	for rect: Rect2 in arena.layout.obstacles:
 		var away: Vector2 = (rect.get_center() - opponent_pos).normalized()
-		# Odległość od środka prostokąta do jego krawędzi w kierunku `away`, plus odstęp postaci.
 		var extent: float = absf(away.x) * rect.size.x / 2.0 + absf(away.y) * rect.size.y / 2.0
 		var candidate: Vector2 = rect.get_center() + away * (extent + clearance)
 		if not interior.has_point(candidate) or _inside_any_obstacle(candidate, arena, clearance):

@@ -1,8 +1,5 @@
 class_name Pickup
 extends Area2D
-## Pakiet do podniesienia: amunicja albo apteczka. Podnosi go bot, któremu się przyda
-## (niepełna amunicja / niepełne HP). Po podniesieniu odnawia się po czasie.
-## Apteczka to mechanika gry (leczenie), nie fizyka.
 
 enum Kind { AMMO, MEDKIT }
 
@@ -12,7 +9,6 @@ const AMMO_TIP: Color = Color(0.75, 0.45, 0.2)
 const MEDKIT_BOX: Color = Color(0.95, 0.95, 0.95)
 const MEDKIT_CROSS: Color = Color(0.85, 0.15, 0.15)
 const EMPTY_ALPHA: float = 0.15
-## Pulsowanie dostępnego pakietu (tylko grafika).
 const PULSE_SPEED: float = 4.0
 const PULSE_AMOUNT: float = 0.08
 
@@ -89,7 +85,6 @@ func _draw() -> void:
 		_draw_medkit(r, alpha)
 
 
-## Skrzynka z trzema nabojami.
 func _draw_ammo(r: float, alpha: float) -> void:
 	draw_rect(Rect2(-r, -r * 0.7, 2.0 * r, 1.4 * r), Color(AMMO_BOX, alpha))
 	var shell_w: float = r * 0.38
@@ -99,7 +94,6 @@ func _draw_ammo(r: float, alpha: float) -> void:
 		draw_circle(Vector2(x, -r * 0.35), shell_w / 2.0, Color(AMMO_TIP, alpha))
 
 
-## Biała apteczka z czerwonym krzyżem.
 func _draw_medkit(r: float, alpha: float) -> void:
 	draw_rect(Rect2(-r, -r, 2.0 * r, 2.0 * r), Color(MEDKIT_BOX, alpha))
 	var arm: float = r * 0.32

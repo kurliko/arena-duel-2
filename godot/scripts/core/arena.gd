@@ -1,9 +1,6 @@
 @tool
 class_name Arena
 extends Node2D
-## Arena: ściany i przeszkody jako StaticBody2D zbudowane z ArenaLayout,
-## rysowanie planszy oraz zapytania o linię wzroku i odległość do przeszkód (stałych i skrzyń).
-## Skrypt działa też w edytorze (@tool), żeby układ był widoczny bez uruchamiania gry.
 
 const FLOOR_COLOR: Color = Color(0.15, 0.16, 0.19)
 const FLOOR_TILE_COLOR: Color = Color(0.17, 0.18, 0.215)
@@ -41,7 +38,6 @@ func _build_bodies() -> void:
 	_body.name = "Walls"
 	_body.collision_layer = PhysicsLayers.WALLS
 	_body.collision_mask = 0
-	# Restytucja ścian 0: odbicie pocisku zależy od materiału pocisku (projectile_restitution).
 	var material := PhysicsMaterial.new()
 	material.friction = 0.0
 	material.bounce = 0.0
@@ -85,7 +81,6 @@ func _draw() -> void:
 		_draw_editor_markers()
 
 
-## Podłoga w szachownicę dużych płytek (ułatwia ocenę prędkości i odległości na nagraniach).
 func _draw_floor() -> void:
 	draw_rect(Rect2(Vector2.ZERO, layout.size), FLOOR_COLOR)
 	var columns: int = ceili(layout.size.x / FLOOR_TILE)
@@ -97,7 +92,6 @@ func _draw_floor() -> void:
 				draw_rect(tile.intersection(Rect2(Vector2.ZERO, layout.size)), FLOOR_TILE_COLOR)
 
 
-## W edytorze: punkty startowe, pakiety, apteczki i skrzynie jako kolorowe znaczniki.
 func _draw_editor_markers() -> void:
 	for point: Vector2 in layout.spawn_points:
 		draw_circle(point, EDITOR_MARKER_RADIUS, EDITOR_COLORS["spawn"])
@@ -113,14 +107,11 @@ func center() -> Vector2:
 	return layout.size / 2.0
 
 
-## Czy między punktami nie ma przeszkody ani skrzyni. Punkty we współrzędnych areny (lokalnych);
-## raycast działa w globalnych, bo w scenie treningowej areny są przesunięte względem siebie.
 func has_line_of_sight(from: Vector2, to: Vector2) -> bool:
 	var query := PhysicsRayQueryParameters2D.create(to_global(from), to_global(to), PhysicsLayers.SIGHT_BLOCKERS)
 	return get_world_2d().direct_space_state.intersect_ray(query).is_empty()
 
 
-## Odległość do najbliższej ściany, przeszkody lub skrzyni w danym kierunku (maksymalnie max_length).
 func ray_distance(from: Vector2, direction: Vector2, max_length: float) -> float:
 	var query := PhysicsRayQueryParameters2D.create(
 			to_global(from), to_global(from + direction * max_length), PhysicsLayers.SIGHT_BLOCKERS)

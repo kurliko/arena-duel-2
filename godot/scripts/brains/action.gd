@@ -1,12 +1,8 @@
 class_name Action
 extends RefCounted
-## Decyzja bota. Wszystkie pola dyskretne, żeby ta sama przestrzeń akcji
-## pasowała do każdego mózgu (w tym PPO ze Stable-Baselines3).
 
-## Kierunki ruchu: 0 = stop, 1..8 = osiem kierunków co 45 stopni (1 = prawo, zgodnie z ruchem wskazówek zegara).
 const MOVE_STOP: int = 0
 const MOVE_DIRECTIONS: int = 9
-## Obrót: 0 = brak, 1/2 = w lewo/prawo, 3/4 = precyzyjnie w lewo/prawo (GameConfig.fine_turn_factor).
 const TURN_NONE: int = 0
 const TURN_LEFT: int = 1
 const TURN_RIGHT: int = 2
@@ -24,7 +20,6 @@ static func idle() -> Action:
 	return Action.new()
 
 
-## Wektor jednostkowy kierunku ruchu (zero dla MOVE_STOP).
 static func move_vector(move_index: int) -> Vector2:
 	if move_index == MOVE_STOP:
 		return Vector2.ZERO

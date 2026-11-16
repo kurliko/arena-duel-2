@@ -1,6 +1,4 @@
-﻿# Plik pomocniczy dla odwtorz_wyniki.ps1 i wspolne.ps1.
-# Szuka folderu kod/ i pliku Godota
-
+﻿# szuka folderu z kodem i godota (mozna ustawic $env:GODOT_BIN)
 $KodDir = Join-Path $PSScriptRoot "..\kod"
 if (-not (Test-Path (Join-Path $KodDir "godot\project.godot"))) {
     $KodDir = Join-Path $PSScriptRoot ".."

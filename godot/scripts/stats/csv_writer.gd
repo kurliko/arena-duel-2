@@ -1,9 +1,6 @@
 class_name CsvWriter
 extends RefCounted
-## Dopisywanie wyników meczów do pliku CSV (jeden wiersz na mecz).
-## Nagłówek jest zapisywany, gdy plik jest nowy lub pusty, więc kolejne serie można dopisywać do tego samego pliku.
 
-## Parametry konfiguracji zapisywane w każdym wierszu (do eksperymentów z fizyką).
 const CONFIG_COLUMNS: Array[String] = [
 	"projectile_speed", "projectile_mass", "projectile_linear_damp", "projectile_restitution", "max_bounces",
 	"fighter_mass", "fighter_inertia", "move_force", "fighter_linear_damp", "crate_mass",
@@ -17,7 +14,6 @@ var path: String
 var _file: FileAccess
 
 
-## Ścieżka względna jest liczona od katalogu głównego repozytorium (nadrzędnego wobec godot/).
 static func resolve_path(raw_path: String) -> String:
 	if raw_path.begins_with("res://") or raw_path.begins_with("user://"):
 		return ProjectSettings.globalize_path(raw_path)

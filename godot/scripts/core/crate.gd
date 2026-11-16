@@ -1,8 +1,5 @@
 class_name Crate
 extends RigidBody2D
-## Przesuwana skrzynia: ciało sztywne z masą, tarciem o podłoże (tłumienie) i momentem bezwładności.
-## Postacie mogą ją pchać, pociski przekazują jej pęd (trafienie poza środkiem ją obraca) i odbijają się od niej.
-## Zasłania widok tak jak stałe przeszkody, więc działa jak ruchoma osłona.
 
 const WOOD: Color = Color(0.55, 0.38, 0.2)
 const WOOD_DARK: Color = Color(0.36, 0.24, 0.12)
@@ -20,7 +17,6 @@ func setup(cfg: GameConfig) -> void:
 	gravity_scale = 0.0
 	can_sleep = false
 	mass = config.crate_mass
-	# Moment bezwładności kwadratu względem środka: m * a^2 / 6.
 	inertia = config.crate_mass * config.crate_size * config.crate_size / 6.0
 	linear_damp_mode = RigidBody2D.DAMP_MODE_REPLACE
 	linear_damp = config.crate_linear_damp
@@ -40,7 +36,6 @@ func setup(cfg: GameConfig) -> void:
 
 
 func reset_at(at: Vector2) -> void:
-	# Transformacja globalna (jak w Fighter.reset_at): areny w scenie treningowej są przesunięte.
 	_reset_transform = (get_parent() as Node2D).global_transform * Transform2D(0.0, at)
 	_pending_reset = true
 	position = at

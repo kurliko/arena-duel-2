@@ -1,20 +1,12 @@
 class_name Projectile
 extends RigidBody2D
-## Pocisk jako ciało sztywne o masie m_p, symulowane przez silnik fizyki:
-## - ciągłe wykrywanie kolizji (CCD, rzutowanie kształtu), więc szybki pocisk nie przeskakuje ścian,
-## - tłumienie liniowe: pocisk zwalnia z odległością,
-## - rykoszet rozwiązuje silnik (restytucja materiału pocisku), z limitem odbić,
-## - trafienie: silnik przekazuje trafionemu pęd (pchnięcie), a obrażenia są proporcjonalne do energii
-##   kinetycznej pocisku tuż przed zderzeniem: damage_at_muzzle_speed * (v / v0)^2.
 
-## Długość śladu pocisku (liczba zapamiętanych pozycji, tylko grafika).
 const TRAIL_LENGTH: int = 6
 
 var config: GameConfig
 var shooter: Fighter
 var bounces: int = 0
 var _lifetime_left: float = 0.0
-## Prędkość na początku bieżącego kroku fizyki, czyli tuż przed ewentualnym zderzeniem.
 var _velocity_before_step: Vector2 = Vector2.ZERO
 var _trail: Array[Vector2] = []
 var _hit_done: bool = false
@@ -47,7 +39,6 @@ func setup(cfg: GameConfig, from_fighter: Fighter, direction: Vector2) -> void:
 	var collision := CollisionShape2D.new()
 	collision.shape = shape
 	add_child(collision)
-	# Pocisk startuje ze środka strzelca; strzelca może trafić dopiero po odbiciu.
 	add_collision_exception_with(from_fighter)
 	body_entered.connect(_on_body_entered)
 
@@ -98,7 +89,6 @@ func _hit(target: Fighter) -> void:
 
 func _draw() -> void:
 	var tint: Color = shooter.color if is_instance_valid(shooter) else Color.WHITE
-	# Ślad: jaśniejszy przy pocisku, zanika do tyłu; jasność pocisku rośnie z energią.
 	var energy: float = clampf(pow(linear_velocity.length() / config.projectile_speed, 2.0), 0.0, 1.0)
 	for i: int in range(1, _trail.size()):
 		var alpha: float = 0.5 * (1.0 - float(i) / TRAIL_LENGTH) * energy

@@ -1,6 +1,5 @@
 class_name RandomBrain
 extends Brain
-## Losowe akcje: dolna granica skuteczności i pierwszy przeciwnik w treningu bota RL.
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 

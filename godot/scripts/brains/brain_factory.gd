@@ -1,10 +1,8 @@
 class_name BrainFactory
-## Tworzenie mózgów po nazwie (z linii poleceń, menu, turnieju).
 
 const RANDOM: String = "random"
 const SCRIPTED: String = "scripted"
 const FUZZY: String = "fuzzy"
-## Bot RL wymaga RLController, więc tworzy go MatchManager (nie ta fabryka).
 const RL: String = "rl"
 
 

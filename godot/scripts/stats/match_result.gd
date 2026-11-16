@@ -1,6 +1,5 @@
 class_name MatchResult
 extends RefCounted
-## Wynik jednego meczu.
 
 const WINNER_A: String = "A"
 const WINNER_B: String = "B"
@@ -11,9 +10,7 @@ const REASON_TIME: String = "time"
 
 var match_index: int = 0
 var rng_seed: int = 0
-## Nazwa pliku konfiguracji (np. default), do rozróżniania eksperymentów.
 var config_name: String = ""
-## Czy A startował z punktu strony B (zmiana stron co mecz).
 var sides_swapped: bool = false
 var brain_a: String = ""
 var brain_b: String = ""

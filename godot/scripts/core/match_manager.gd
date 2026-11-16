@@ -1,12 +1,5 @@
 class_name MatchManager
 extends Node
-## Przebieg meczów: start z ziarnem losowości, decyzje mózgów co decision_interval_ticks,
-## koniec po śmierci bota albo limicie czasu, seria meczów ze zmianą stron.
-##
-## Argumenty użytkownika (po `--`): --brain-a=NAZWA --brain-b=NAZWA --matches=N --seed=S --config=res://...
-##   --csv=ŚCIEŻKA (dopisywanie wyników; ścieżka względna liczona od katalogu repozytorium)
-##   --rl-model=res://models/....onnx --rl-deterministic=1 --quiet=1
-## Mózg "rl": bot sterowany polityką z Godot RL Agents (model ONNX w grze albo Python podczas treningu).
 
 signal match_started(match_index: int)
 signal match_finished(result: MatchResult)
@@ -23,22 +16,15 @@ const TIME_EPSILON: float = 1e-4
 @export var crates_root: Node2D
 @export var brain_a_name: String = BrainFactory.SCRIPTED
 @export var brain_b_name: String = BrainFactory.RANDOM
-## Liczba meczów do rozegrania, potem wyjście z gry (0 = bez końca).
 @export var matches_to_play: int = 0
-## Plik CSV z wynikami (pusty = bez zapisu).
 @export var csv_path: String = ""
-## Bez wypisywania wyniku każdego meczu (trening).
 @export var quiet: bool = false
-## false: ignoruj argumenty linii poleceń (TrainingScene ustawia parametry każdej areny sama).
 @export var read_command_line: bool = true
 
 @export_group("RL")
-## Model ONNX dla mózgu "rl" przy grze bez Pythona.
 @export var rl_model_path: String = "res://models/rl_brain.onnx"
-## true: zawsze akcja o największym prawdopodobieństwie; false: losowanie z rozkładu polityki.
 @export var rl_deterministic: bool = false
 @export var reward_config: RewardConfig
-## true: decyzje wyzwala zewnętrzny zegar (TrainingScene z wieloma arenami i wspólnym Sync).
 @export var external_clock: bool = false
 
 var fighter_a: Fighter
@@ -67,7 +53,7 @@ var _sync: ArenaSync
 
 
 func _ready() -> void:
-	# Decyzje zapadają przed ruchem postaci i pocisków w tym samym ticku.
+	# decyzje maja zapasc przed ruchem postaci w tym samym ticku
 	process_physics_priority = -10
 	if read_command_line:
 		_apply_command_line()
@@ -101,7 +87,6 @@ func _apply_command_line() -> void:
 		var parts: PackedStringArray = arg.trim_prefix("--").split("=", true, 1)
 		if parts.size() == 2:
 			args[parts[0]] = parts[1]
-	# Konfiguracja najpierw, żeby pozostałe argumenty (np. seed) trafiły do właściwego zasobu.
 	if args.has("config"):
 		config = load(args["config"]) as GameConfig
 	brain_a_name = args.get("brain-a", brain_a_name)
@@ -140,7 +125,6 @@ func _create_rl_controller(fighter: Fighter) -> RLController:
 	return controller
 
 
-## Gra bez Pythona: Sync w trybie inferencji ONNX, wywoływany przez ten MatchManager w tickach decyzji.
 func _create_inference_sync() -> void:
 	_sync = ArenaSync.new()
 	_sync.name = "ArenaSync"
@@ -169,7 +153,6 @@ func start_match() -> void:
 		pickup.reset()
 	for i: int in crates.size():
 		crates[i].reset_at(arena.layout.crate_points[i])
-	# Zmiana stron co mecz, żeby układ areny nie faworyzował żadnego mózgu.
 	var swap: bool = match_index % 2 == 1
 	_sides_swapped = swap
 	var spawns: Array[Vector2] = arena.layout.spawn_points
@@ -204,12 +187,10 @@ func _physics_process(delta: float) -> void:
 		apply_decisions()
 	_tick += 1
 	elapsed += delta
-	# Tolerancja na błąd zaokrąglenia sumy kroków (inaczej limit 60 s kończyłby się po 60,017 s).
 	if elapsed >= config.max_match_seconds - TIME_EPSILON:
 		_finish(MatchResult.REASON_TIME)
 
 
-## Pierwsza połowa decyzji: obserwacje obu botów i przekazanie ich mózgom (Brain.observe).
 func collect_observations() -> void:
 	if not running:
 		return
@@ -223,7 +204,6 @@ func collect_observations() -> void:
 	brain_b.observe(_obs_b)
 
 
-## Druga połowa decyzji: akcje z mózgów trafiają do postaci.
 func apply_decisions() -> void:
 	if not running:
 		return
@@ -249,7 +229,6 @@ func _on_shot_fired(shooter: Fighter, direction: Vector2) -> void:
 
 
 func _on_fighter_died(_fighter: Fighter) -> void:
-	# Koniec meczu na początku następnego ticku, żeby objąć jednoczesną śmierć obu botów.
 	_someone_died = true
 
 
